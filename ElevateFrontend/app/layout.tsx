@@ -1,6 +1,5 @@
 import Footer from "@/components/Footer";
 import "./globals.css";
-import { DotBackgroundDemo } from "@/components/Dotbackground";
 
 export const metadata = {
   title: "Elevate",

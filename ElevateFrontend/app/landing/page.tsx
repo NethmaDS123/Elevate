@@ -4,7 +4,6 @@ import Hero from "./components/Hero";
 import Features from "./components/Features";
 import Benefits from "./components/Benefits";
 import Navbar from "@/components/Navbar";
-import CallToAction from "./components/CalltoAction";
 
 export default function LandingPage() {
   return (

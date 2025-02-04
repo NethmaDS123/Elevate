@@ -109,8 +109,8 @@ export default function Benefits() {
           className="mt-16 text-center"
         >
           <p className="text-lg text-gray-600 italic">
-            "The average user saves 12+ hours per week while improving their
-            interview success rate"
+            &quot;The average user saves 12+ hours per week while improving
+            their interview success rate&quot;
           </p>
         </motion.div>
       </div>

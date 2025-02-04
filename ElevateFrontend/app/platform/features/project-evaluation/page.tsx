@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiAlertTriangle,
-  FiCheckCircle,
   FiEdit3,
   FiLoader,
   FiStar,
@@ -112,8 +111,8 @@ export default function ProjectEvaluationPage() {
               Project Evaluation
             </h1>
             <p className="text-lg text-gray-600 mt-2">
-              Get detailed feedback on your project's strengths and areas for
-              improvement
+              Get detailed feedback on your project&apos;s strengths and areas
+              for improvement
             </p>
           </div>
 

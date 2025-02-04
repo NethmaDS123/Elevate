@@ -51,7 +51,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-800">
             Welcome back, Nethma!
           </h1>
-          <p className="text-gray-600">Here's your current progress</p>
+          <p className="text-gray-600">Here&apos;s your current progress</p>
         </div>
         <div className="flex items-center gap-4">
           <div className="relative">
