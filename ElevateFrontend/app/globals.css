@@ -1,0 +1,53 @@
+/* globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #ffffff; /* White background */
+  color: #1a1a1a; /* Dark text for contrast */
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom focus styles */
+button:focus,
+a:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+/* Gradient background for sections */
+.gradient-bg {
+  background: linear-gradient(135deg, #f9fafb, #ffffff);
+}
+
+/* Section separations */
+.section-separator {
+  border-bottom: 1px solid #e5e7eb; /* Soft gray border */
+}
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) translateY(-200px);
+  }
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s infinite;
+}
