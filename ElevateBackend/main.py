@@ -18,6 +18,16 @@ import uvicorn
 
 app = FastAPI()
 
+@app.get("/")
+def read_root():
+    return {"message": "Hello from Render!"}
+
+if __name__ == "__main__":
+    # Fetch Render's assigned port from environment variables
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -143,8 +153,3 @@ async def get_learning_pathways(request: Request):
         })
 
     return pathway
-
-# Entry point for Render deployment
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))  # Default to 8000 if no PORT is set
-    uvicorn.run(app, host="0.0.0.0", port=port)
