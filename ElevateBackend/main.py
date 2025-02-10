@@ -19,8 +19,9 @@ import uvicorn
 app = FastAPI()
 
 @app.get("/")
+@app.head("/")  # This handles HEAD requests as well
 def read_root():
-    return {"message": "Hello from Render!"}
+    return {"message": "Hello, World!"}
 
 if __name__ == "__main__":
     # Fetch Render's assigned port from environment variables
