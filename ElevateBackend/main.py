@@ -146,5 +146,5 @@ async def get_learning_pathways(request: Request):
 
 # Entry point for Render deployment
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", 8000))  # Default to 8000 if no PORT is set
+    uvicorn.run(app, host="0.0.0.0", port=port)
