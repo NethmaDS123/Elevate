@@ -24,15 +24,19 @@ export default function Sidebar() {
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      <div className="flex items-center gap-3 mb-8 overflow-hidden">
-        <div className="w-8 h-8 bg-blue-400 rounded-lg flex-shrink-0" />
+      {/* Clickable Elevate Logo */}
+      <Link
+        href="/"
+        className="flex items-center gap-3 mb-8 overflow-hidden group"
+      >
+        <div className="w-8 h-8 bg-blue-400 rounded-lg flex-shrink-0 transition-transform group-hover:scale-110" />
         <motion.span
           animate={{ opacity: isOpen ? 1 : 0 }}
-          className="text-xl font-bold text-blue-400 whitespace-nowrap"
+          className="text-xl font-bold text-blue-400 whitespace-nowrap transition-colors group-hover:text-blue-300"
         >
           Elevate
         </motion.span>
-      </div>
+      </Link>
 
       <nav className="space-y-1">
         <SidebarLink

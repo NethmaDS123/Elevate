@@ -23,7 +23,7 @@ export default function ResumeOptimizer() {
     setError("");
     try {
       const res = await axios.post<OptimizationResponse>(
-        "http://127.0.0.1:8000/optimize_resume",
+        "https://elevatebackend.onrender.com/optimize_resume",
         {
           resume_text: resumeText,
           job_description: jobDescription,
