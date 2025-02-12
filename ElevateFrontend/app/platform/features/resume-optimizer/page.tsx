@@ -62,7 +62,7 @@ export default function ResumeOptimizer() {
                 </span>
                 <textarea
                   placeholder="Paste your current resume..."
-                  className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-64"
+                  className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-64 text-gray-900"
                   value={resumeText}
                   onChange={(e) => setResumeText(e.target.value)}
                 />
@@ -76,7 +76,7 @@ export default function ResumeOptimizer() {
                 </span>
                 <textarea
                   placeholder="Paste the target job description..."
-                  className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-64"
+                  className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none h-64 text-gray-900"
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                 />

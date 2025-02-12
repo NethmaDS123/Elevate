@@ -43,12 +43,7 @@ export default function Navbar() {
           >
             Features
           </button>
-          <button
-            onClick={() => handleScroll("how-it-works")}
-            className="hover:text-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          >
-            How It Works
-          </button>
+
           <button
             onClick={() => handleScroll("benefits")}
             className="hover:text-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
@@ -59,14 +54,14 @@ export default function Navbar() {
 
         {/* Call-to-Action Buttons for Desktop */}
         <div className="hidden md:flex items-center space-x-4">
-          <button
+          {/* <button
             onClick={() => router.push("/signin")}
             className="text-gray-600 hover:text-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
           >
             Sign In
-          </button>
+          </button> */}
           <button
-            onClick={() => router.push("/signup")}
+            onClick={() => router.push("/platform/features/dashboard")}
             className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-6 rounded-full font-semibold shadow-md transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Get Started
