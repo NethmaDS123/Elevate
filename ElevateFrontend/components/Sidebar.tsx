@@ -10,6 +10,7 @@ import {
   FiUser,
   FiSettings,
   FiArrowLeft,
+  FiCheckCircle,
 } from "react-icons/fi";
 import { useSidebar } from "./SidebarContext";
 
@@ -58,6 +59,12 @@ export default function Sidebar() {
           isOpen={isOpen}
         />
         <SidebarLink
+          href="/platform/features/interview-prep"
+          icon={<FiCheckCircle className="w-5 h-5" />}
+          label="Interview Prep"
+          isOpen={isOpen}
+        />
+        <SidebarLink
           href="/platform/features/learning-paths"
           icon={<FiBookOpen className="w-5 h-5" />}
           label="Learning Pathways"
@@ -69,12 +76,7 @@ export default function Sidebar() {
           label="Profile"
           isOpen={isOpen}
         />
-        <SidebarLink
-          href="/platform/settings"
-          icon={<FiSettings className="w-5 h-5" />}
-          label="Settings"
-          isOpen={isOpen}
-        />
+
         <div className="pt-4 mt-4 border-t border-gray-700">
           <SidebarLink
             href="/logout"

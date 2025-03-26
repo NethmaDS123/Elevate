@@ -1,51 +1,63 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiAlertTriangle,
   FiEdit3,
   FiLoader,
   FiStar,
-  FiShield,
-  FiDatabase,
-  FiZap,
-  FiCalendar,
+  FiCode,
+  FiCheckCircle,
+  FiCpu,
+  FiTrendingUp,
+  FiSettings,
+  FiUsers,
 } from "react-icons/fi";
 
+// Function to parse the AI-generated evaluation into structured data
 function parseEvaluation(evaluation: string): Record<string, string> {
-  const lines = evaluation.split("\n").filter((line) => line.trim() !== "");
+  const sections = evaluation.split("\n").filter((line) => line.trim() !== "");
   const result: Record<string, string> = {};
-  lines.forEach((line) => {
-    const parts = line.split(":");
-    if (parts.length >= 2) {
-      const key = parts.shift()?.trim();
-      const value = parts.join(":").trim();
-      if (key) result[key] = value;
+
+  let currentKey = "";
+  sections.forEach((line) => {
+    if (line.includes(":")) {
+      const [key, ...rest] = line.split(":");
+      currentKey = key.trim();
+      result[currentKey] = rest.join(":").trim();
+    } else if (currentKey) {
+      result[currentKey] += `\n${line.trim()}`;
     }
   });
+
   return result;
 }
 
+// Icons for different evaluation categories
 const getSectionIcon = (key: string) => {
   const lowerKey = key.toLowerCase();
-  if (lowerKey.includes("security"))
-    return <FiShield className="w-5 h-5 mr-2" />;
-  if (lowerKey.includes("technology"))
-    return <FiDatabase className="w-5 h-5 mr-2" />;
-  if (lowerKey.includes("reliability"))
-    return <FiZap className="w-5 h-5 mr-2" />;
-  if (lowerKey.includes("integration"))
-    return <FiCalendar className="w-5 h-5 mr-2" />;
-  return <FiStar className="w-5 h-5 mr-2" />;
+  if (lowerKey.includes("innovation"))
+    return <FiTrendingUp className="w-5 h-5 mr-2 text-blue-500" />;
+  if (lowerKey.includes("technical"))
+    return <FiCpu className="w-5 h-5 mr-2 text-purple-500" />;
+  if (lowerKey.includes("feasibility"))
+    return <FiCheckCircle className="w-5 h-5 mr-2 text-green-500" />;
+  if (lowerKey.includes("scalability"))
+    return <FiSettings className="w-5 h-5 mr-2 text-yellow-500" />;
+  if (lowerKey.includes("industry"))
+    return <FiUsers className="w-5 h-5 mr-2 text-gray-500" />;
+  return <FiStar className="w-5 h-5 mr-2 text-gray-400" />;
 };
 
+// Color themes based on category
 const getSectionColor = (key: string) => {
   const lowerKey = key.toLowerCase();
-  if (lowerKey.includes("security")) return "border-yellow-400 bg-yellow-50";
-  if (lowerKey.includes("technology")) return "border-purple-400 bg-purple-50";
-  if (lowerKey.includes("reliability")) return "border-green-400 bg-green-50";
-  if (lowerKey.includes("integration")) return "border-blue-400 bg-blue-50";
+  if (lowerKey.includes("innovation")) return "border-blue-400 bg-blue-50";
+  if (lowerKey.includes("technical")) return "border-purple-400 bg-purple-50";
+  if (lowerKey.includes("feasibility")) return "border-green-400 bg-green-50";
+  if (lowerKey.includes("scalability")) return "border-yellow-400 bg-yellow-50";
+  if (lowerKey.includes("industry")) return "border-gray-400 bg-gray-50";
   return "border-gray-200 bg-white";
 };
 
@@ -55,47 +67,43 @@ export default function ProjectEvaluationPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setEvaluation("");
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError("");
+      setEvaluation("");
 
-    if (!projectDescription.trim()) {
-      setError("Project description is required.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        "https://elevatebackend.onrender.com";
-      const res = await fetch(`${backendUrl}/evaluate_project`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ project_description: projectDescription }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setEvaluation(
-          data.evaluation.evaluation
-            ? data.evaluation.evaluation
-            : data.evaluation
-        );
-      } else {
-        setError(data.error || "Something went wrong.");
+      if (!projectDescription.trim()) {
+        setError("Project description is required.");
+        return;
       }
-    } catch (err) {
-      console.error("Error during evaluation:", err);
-      setError("An error occurred while evaluating the project.");
-    }
-    setLoading(false);
-  };
+
+      setLoading(true);
+
+      try {
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        const res = await fetch(`${backendUrl}/evaluate_project`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project_description: projectDescription }),
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setEvaluation(data.evaluation?.evaluation || data.evaluation);
+        } else {
+          setError(data.error || "Something went wrong.");
+        }
+      } catch (err) {
+        console.error("Error during evaluation:", err);
+        setError("An error occurred while evaluating the project.");
+      }
+      setLoading(false);
+    },
+    [projectDescription]
+  );
 
   const parsedOutput = evaluation ? parseEvaluation(evaluation) : null;
 
@@ -109,11 +117,11 @@ export default function ProjectEvaluationPage() {
         >
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold text-gray-900 mb-3 bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 inline-block">
-              Project Evaluation
+              AI Project Evaluator
             </h1>
             <p className="text-lg text-gray-600 mt-2">
-              Get detailed feedback on your project&apos;s strengths and areas
-              for improvement
+              Receive AI-powered feedback on your project’s strengths and areas
+              for improvement.
             </p>
           </div>
 
@@ -128,8 +136,7 @@ export default function ProjectEvaluationPage() {
               </label>
               <textarea
                 id="projectDescription"
-                className="w-full h-48 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent 
-                         text-gray-700 placeholder-gray-400 resize-none transition-all duration-200"
+                className="w-full h-48 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700 placeholder-gray-400 resize-none transition-all duration-200"
                 placeholder="Describe your project in detail..."
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
@@ -151,8 +158,7 @@ export default function ProjectEvaluationPage() {
               <button
                 type="button"
                 onClick={() => setProjectDescription("")}
-                className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium rounded-lg 
-                           hover:bg-gray-50 transition-colors duration-200"
+                className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
                 Clear Input
               </button>
@@ -160,21 +166,14 @@ export default function ProjectEvaluationPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 
-                           text-white font-semibold rounded-lg shadow-md transform transition-all duration-200 
-                           hover:scale-[1.02] disabled:opacity-50 disabled:transform-none flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md transform transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:transform-none flex items-center"
               >
                 {loading ? (
-                  <>
-                    <FiLoader className="animate-spin mr-2" />
-                    Analyzing...
-                  </>
+                  <FiLoader className="animate-spin mr-2" />
                 ) : (
-                  <>
-                    <FiStar className="mr-2" />
-                    Evaluate Project
-                  </>
+                  <FiStar className="mr-2" />
                 )}
+                {loading ? "Analyzing..." : "Evaluate Project"}
               </button>
             </div>
           </form>
@@ -197,45 +196,10 @@ export default function ProjectEvaluationPage() {
                       key
                     )} shadow-sm`}
                   >
-                    <div className="flex items-start mb-4">
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center">
-                          {getSectionIcon(key)}
-                        </div>
-                      </div>
-                      <div className="ml-3 flex-1">
-                        <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                          {key}
-                        </h3>
-                        <div className="prose prose-sm text-gray-600">
-                          {value.split("\n").map((line, i) => (
-                            <p key={i} className="mb-2">
-                              {line}
-                            </p>
-                          ))}
-                        </div>
-                        {key.toLowerCase().includes("technology") && (
-                          <div className="mt-4 flex flex-wrap gap-2">
-                            {value.split(", ").map((tech, i) => (
-                              <span
-                                key={i}
-                                className="px-3 py-1 bg-white border border-gray-200 rounded-full text-sm shadow-sm"
-                              >
-                                {tech.trim()}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {key.toLowerCase().includes("reliability") && (
-                          <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: "99.9%" }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2 flex items-center">
+                      {getSectionIcon(key)} {key}
+                    </h3>
+                    <p className="text-gray-600">{value}</p>
                   </motion.div>
                 ))}
               </motion.div>
