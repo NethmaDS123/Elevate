@@ -1,6 +1,7 @@
 import google.generativeai as genai
 from dotenv import load_dotenv
 import os
+import textwrap
 
 # Load environment variables from .env file
 load_dotenv()
@@ -9,7 +10,7 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 class ProjectEvaluator:
-    """A class to evaluate software engineering projects."""
+    """A class to evaluate software engineering projects using Gemini AI."""
 
     def __init__(self, model_name="gemini-1.5-flash"):
         self.model_name = model_name
@@ -22,33 +23,67 @@ class ProjectEvaluator:
         - project_description (str): The description of the project.
 
         Returns:
-        - dict: Evaluation result including score, suggestions, and strengths.
+        - dict: Evaluation result including score, strengths, and suggestions.
         """
         try:
             # Initialize the model
             model = genai.GenerativeModel(self.model_name)
 
-            # Create the prompt for Gemini
-            prompt = f"""
-            You are an expert project evaluator. Analyze the given project description and provide:
-            1. A score out of 100 based on innovation, complexity, and completeness.
-            2. Suggestions for improvement or additional features if needed.
-            3. Strengths of the project if it already meets industry standards.
+            # Create a well-formatted prompt using textwrap.dedent()
+            prompt = textwrap.dedent(f"""
+                You are an expert software engineering evaluator with deep knowledge of software development, AI, and industry best practices. Your task is to thoroughly analyze the given project description and provide a structured, detailed evaluation.
 
-            Project Description:
-            {project_description}
+                ## Evaluation Criteria:
+                1. **Innovation (0-30 points)**  
+                   - How unique or groundbreaking is the idea?  
+                   - Does it solve a real-world problem in a novel way?  
 
-            Evaluation Output Format:
-            Score: [0-100]
-            Suggestions: [List of actionable suggestions or "None"]
-            Strengths: [List of strengths or "None"]
-            """
+                2. **Technical Complexity (0-30 points)**  
+                   - How challenging is the implementation?  
+                   - Does it involve advanced concepts like AI, distributed systems, or optimization?  
 
-            # Use the model to generate a response
+                3. **Completeness & Feasibility (0-20 points)**  
+                   - Is the project well-defined and executable with current technology?  
+                   - Are the key components, architecture, and implementation details addressed?  
+
+                4. **Scalability & Maintainability (0-10 points)**  
+                   - Can the project handle increasing users and data?  
+                   - Is the codebase structured for long-term maintainability?  
+
+                5. **Industry Relevance (0-10 points)**  
+                   - Does the project align with industry needs and trends?  
+                   - Would companies or developers find it useful?  
+
+                ## Expected Response Format:
+                **Overall Score: [0-100]**  
+
+                **Detailed Feedback:**  
+                - **Innovation:** [Analysis]  
+                - **Technical Complexity:** [Analysis]  
+                - **Completeness & Feasibility:** [Analysis]  
+                - **Scalability & Maintainability:** [Analysis]  
+                - **Industry Relevance:** [Analysis]  
+
+                **Strengths:**  
+                [List of strong aspects]  
+
+                **Areas for Improvement:**  
+                [List of specific, actionable recommendations for enhancement]  
+
+                ## Project Description:  
+                {project_description}
+            """)
+
+            # Generate a response from Gemini
             response = model.generate_content(prompt)
-            evaluation = response.text.strip()
+
+            # Extract and clean response text
+            evaluation = response.text.strip() if response and response.text else "No response received."
 
             return {"evaluation": evaluation}
 
+        except genai.GenerationError as e:
+            raise RuntimeError(f"Gemini API Error: {e}")
+
         except Exception as e:
-            raise RuntimeError(f"Error during project evaluation: {e}")
+            raise RuntimeError(f"Unexpected error during project evaluation: {e}")

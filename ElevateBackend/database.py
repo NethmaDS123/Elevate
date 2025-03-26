@@ -63,3 +63,36 @@ def fetch_learning_pathway_results():
     collection = db["learning_pathways"]
     results = collection.find().sort("timestamp", -1)
     return list(results)
+
+# Store/Fetch Interview Analysis
+def store_interview_analysis(data):
+    collection = db["interview_analysis"]
+    stored_data = {
+        "question": data["question"],
+        "analysis": data["analysis"],
+        "timestamp": datetime.utcnow()
+    }
+    result = collection.insert_one(stored_data)
+    return result.inserted_id
+
+def fetch_interview_analysis():
+    collection = db["interview_analysis"]
+    results = collection.find().sort("timestamp", -1)
+    return list(results)
+
+# Store/Fetch Interview Feedback
+def store_interview_feedback(data):
+    collection = db["interview_feedback"]
+    stored_data = {
+        "question": data["question"],
+        "user_answer": data["user_answer"],
+        "feedback": data["feedback"],
+        "timestamp": datetime.utcnow()
+    }
+    result = collection.insert_one(stored_data)
+    return result.inserted_id
+
+def fetch_interview_feedback():
+    collection = db["interview_feedback"]
+    results = collection.find().sort("timestamp", -1)
+    return list(results)

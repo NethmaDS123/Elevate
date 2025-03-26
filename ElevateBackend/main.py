@@ -2,19 +2,23 @@ from fastapi import FastAPI, Request
 from features.project_evaluation import ProjectEvaluator
 from features.learning_paths import LearningPathways
 from features.resume_optimization import ResumeOptimizer
+from features.interview_preparation import InterviewPreparation
 import asyncio
 import pprint
 from database import (
     store_optimization_results,
     fetch_optimization_results,
     store_evaluation_result,
-    store_learning_pathway_result
+    store_learning_pathway_result,
+    store_interview_analysis,
+    store_interview_feedback
 )
 import uuid  # For generating unique user IDs
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 import uvicorn
+import json
 
 app = FastAPI()
 
@@ -37,6 +41,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Initialize Gemini-based Project Evaluator
 project_evaluator = ProjectEvaluator()
 
@@ -46,9 +51,15 @@ resume_optimizer = ResumeOptimizer()
 # Initialize Learning Pathways instance (using Gemini API)
 learning_pathways_instance = LearningPathways()
 
+# Initialize Interview Preparation instance (using Gemini API)
+interview_preparation_instance = InterviewPreparation()
+
+
 # Limit concurrent tasks
 MAX_CONCURRENT_TASKS = 5
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
+
+
 
 # Project Evaluation Endpoint
 @app.post("/evaluate_project")
@@ -89,6 +100,7 @@ class OptimizationResult(BaseModel):
     optimized_resume: str
     token_usage: dict
 
+
 # Resume Optimization Endpoint using Gemini API
 @app.post("/optimize_resume")
 async def optimize_resume(request: Request):
@@ -123,6 +135,7 @@ async def optimize_resume(request: Request):
         "user_id": user_id
     }
 
+
 # Learning Pathways Endpoint
 @app.post("/learning_pathways")
 async def get_learning_pathways(request: Request):
@@ -154,3 +167,44 @@ async def get_learning_pathways(request: Request):
         })
 
     return pathway
+
+
+# Interview Preparation Endpoints
+@app.post("/analyze_question")
+async def analyze_question(request: Request):
+    body = await request.json()
+    question = body.get("question")
+
+    if not question:
+        return {"error": "Question is required."}
+
+    async with semaphore:
+        analysis = await asyncio.get_event_loop().run_in_executor(
+            None, InterviewPreparation.analyze_question, question
+        )
+
+    return analysis
+
+
+@app.post("/feedback")
+async def interview_feedback(request: Request):
+    body = await request.json()
+    question = body.get("question")
+    user_answer = body.get("user_answer")
+
+    if not question or not user_answer:
+        return {"error": "Both question and user_answer are required."}
+
+    async with semaphore:
+        feedback = await asyncio.get_event_loop().run_in_executor(
+            None, InterviewPreparation.feedback_on_answer, question, user_answer
+        )
+
+    if "error" not in feedback:
+        store_interview_feedback({
+            "question": question,
+            "user_answer": user_answer,
+            "feedback": feedback,
+        })
+
+    return feedback
