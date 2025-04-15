@@ -1,54 +1,70 @@
 import openai
 from dotenv import load_dotenv
 import os
+import uuid
+from datetime import datetime, UTC
+from database import store_learning_pathway_result
 
-# Load environment variables from .env file and configure OpenAI API key
+# Load environment variables and configure OpenAI API key
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
     raise ValueError("OPENAI_API_KEY not found in environment variables!")
 
 class LearningPathways:
-    def __init__(self, model: str = "gpt-4"):
+    def __init__(self, model: str = "gpt-3.5-turbo"):
         self.model = model
 
-    def generate_pathway(self, topic: str) -> dict:
-        prompt = f"""You are an expert curriculum designer creating detailed learning pathways. For '{topic}', generate:
+    def generate_pathway(self, user_id: str, topic: str) -> dict:
+        pathway_id = str(uuid.uuid4())
+        timestamp = datetime.now(UTC)
         
-1. A hierarchical breakdown of the subject into modules and subtopics
-2. 6-8 core modules with clear progression
-3. Each module should contain:
-   - 4-8 key topics
-   - Subtopic breakdowns for complex concepts
-   - Practical applications where relevant
-
-Format strictly as:
-
-Learning Pathway for {topic}:
-Module 1: [Module Title]
-  - [Main Topic 1]
-    * [Subtopic 1.1]
-    * [Subtopic 1.2]
-  - [Main Topic 2]
-    * [Subtopic 2.1]
-Module 2: [Module Title]
-  - [Main Topic 1]
-    * [Subtopic 1.1]
-    * [Subtopic 1.2]
-
-Example for "Data Structures":
-Module 1: Fundamental Data Structures
-  - Arrays
-    * Memory allocation
-    * Time complexity analysis
-    * Multi-dimensional arrays
-  - Linked Lists
-    * Singly vs doubly linked
-    * Pointer manipulation
-    * Real-world applications
-
-Focus on technical depth and logical progression. Avoid introductory fluff."""
         try:
+            # Store initial processing state
+            store_learning_pathway_result(user_id, {
+                "pathway_id": pathway_id,
+                "topic": topic,
+                "status": "processing",
+                "createdAt": timestamp,
+                "updatedAt": timestamp
+            })
+
+            # Generate pathway content
+            prompt = f"""You are an expert curriculum designer creating detailed learning pathways. For '{topic}', generate:
+
+                  1. A hierarchical breakdown of the subject into modules and subtopics
+                  2. 6-8 core modules with clear progression
+                  3. Each module should contain:
+                    - 4-8 key topics
+                    - Subtopic breakdowns for complex concepts
+                    - Practical applications where relevant
+
+                  Format strictly as:
+
+                  Learning Pathway for {topic}:
+                  Module 1: [Module Title]
+                    - [Main Topic 1]
+                      * [Subtopic 1.1]
+                      * [Subtopic 1.2]
+                    - [Main Topic 2]
+                      * [Subtopic 2.1]
+                  Module 2: [Module Title]
+                    - [Main Topic 1]
+                      * [Subtopic 1.1]
+                      * [Subtopic 1.2]
+
+                  Example for "Data Structures":
+                  Module 1: Fundamental Data Structures
+                    - Arrays
+                      * Memory allocation
+                      * Time complexity analysis
+                      * Multi-dimensional arrays
+                    - Linked Lists
+                      * Singly vs doubly linked
+                      * Pointer manipulation
+                      * Real-world applications
+
+                  Focus on technical depth and logical progression. Avoid introductory fluff."""
             response = openai.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -58,15 +74,29 @@ Focus on technical depth and logical progression. Avoid introductory fluff."""
                 temperature=0.3,
                 max_tokens=1500,
             )
+            
             pathway_text = response.choices[0].message.content.strip()
-            return {"learning_pathway": pathway_text}
+            
+            # Update with successful result
+            store_learning_pathway_result(user_id, {
+                "pathway_id": pathway_id,
+                "status": "completed",
+                "learning_pathway": pathway_text,
+                "updatedAt": datetime.now(UTC)
+            })
+
+            return {
+                "pathway_id": pathway_id,
+                "learning_pathway": pathway_text,
+                "status": "completed"
+            }
+
         except Exception as e:
-            return {"error": f"Error generating learning pathway: {str(e)}"}
-# Example usage
-if __name__ == "__main__":
-    lp = LearningPathways()
-    pathway = lp.generate_pathway("Machine Learning")
-    if "learning_pathway" in pathway:
-        print(pathway["learning_pathway"])
-    else:
-        print(pathway["error"])
+            error_data = {
+                "pathway_id": pathway_id,
+                "status": "failed",
+                "error": f"Pathway generation failed: {str(e)}",
+                "updatedAt": datetime.now(UTC)
+            }
+            store_learning_pathway_result(user_id, error_data)
+            return error_data

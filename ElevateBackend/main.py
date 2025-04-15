@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Header, HTTPException
 from features.project_evaluation import ProjectEvaluator
 from features.learning_paths import LearningPathways
 from features.resume_optimization import ResumeOptimizer
@@ -6,32 +6,32 @@ from features.interview_preparation import InterviewPreparation
 import asyncio
 import pprint
 from database import (
-    store_optimization_results,
-    fetch_optimization_results,
     store_evaluation_result,
+    store_optimization_results,
     store_learning_pathway_result,
     store_interview_analysis,
-    store_interview_feedback
+    store_interview_feedback,
+    users_collection 
 )
-import uuid  # For generating unique user IDs
+from auth import verify_google_token  
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 import os
 import uvicorn
-import json
+from datetime import datetime, UTC
+import uuid
+from fastapi.responses import JSONResponse
+
 
 app = FastAPI()
 
 @app.get("/")
-@app.head("/")  # This handles HEAD requests as well
+@app.head("/")
 def read_root():
     return {"message": "Hello, World!"}
 
 if __name__ == "__main__":
-    # Fetch Render's assigned port from environment variables
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=port)
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,170 +41,289 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Initialize Gemini-based Project Evaluator
+# Initialize instances of our feature classes
 project_evaluator = ProjectEvaluator()
-
-# Initialize Gemini-based Resume Optimizer
 resume_optimizer = ResumeOptimizer()
-
-# Initialize Learning Pathways instance (using Gemini API)
 learning_pathways_instance = LearningPathways()
-
-# Initialize Interview Preparation instance (using Gemini API)
 interview_preparation_instance = InterviewPreparation()
 
-
-# Limit concurrent tasks
 MAX_CONCURRENT_TASKS = 5
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 
-
-
+# ----------------
 # Project Evaluation Endpoint
+# ----------------
+# main.py (Updated Project Evaluation Endpoint)
 @app.post("/evaluate_project")
-async def evaluate_project(request: Request):
-    """
-    Endpoint to evaluate a software engineering project.
-    Request Body:
-      - project_description (str): The description of the project.
-    Response:
-      - dict: Evaluation result.
-    """
+async def evaluate_project(request: Request, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    
+    token = authorization.split("Bearer ")[-1]
+    try:
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
     body = await request.json()
     project_description = body.get("project_description")
-
     if not project_description:
-        return {"error": "Project description is required."}
+        raise HTTPException(status_code=400, detail="Project description is required.")
+
+    # Generate unique ID for this evaluation
+    evaluation_id = str(uuid.uuid4())
+    timestamp = datetime.now(UTC)
+    
+    # Create initial entry
+    initial_data = {
+        "evaluation_id": evaluation_id,
+        "project_description": project_description,
+        "status": "processing",
+        "createdAt": timestamp,
+        "updatedAt": timestamp
+    }
+    store_evaluation_result(user_id, initial_data)
 
     async with semaphore:
-        evaluation = await asyncio.get_event_loop().run_in_executor(
-            None, project_evaluator.evaluate, project_description
-        )
+        try:
+            evaluation = await asyncio.get_event_loop().run_in_executor(
+                None, project_evaluator.evaluate, user_id, project_description
+            )
+            
+            # Update existing entry
+            update_data = {
+                "status": "completed",
+                "evaluation": evaluation,
+                "updatedAt": datetime.now(UTC)
+            }
+            
+            users_collection.update_one(
+                {"_id": user_id, "features.projectEvaluation.evaluation_id": evaluation_id},
+                {"$set": {"features.projectEvaluation.$.status": "completed",
+                          "features.projectEvaluation.$.evaluation": evaluation,
+                          "features.projectEvaluation.$.updatedAt": datetime.now(UTC)}}
+            )
+            
+            return {"evaluation": evaluation, "evaluation_id": evaluation_id}
+            
+        except Exception as e:
+            users_collection.update_one(
+                {"_id": user_id, "features.projectEvaluation.evaluation_id": evaluation_id},
+                {"$set": {"features.projectEvaluation.$.status": "failed",
+                          "features.projectEvaluation.$.error": str(e),
+                          "features.projectEvaluation.$.updatedAt": datetime.now(UTC)}}
+            )
+            raise HTTPException(status_code=500, detail=str(e))
 
-    print("\n--- Project Evaluation Output ---")
-    pprint.pprint(evaluation)
-    print("--- End of Output ---\n")
-
-    store_evaluation_result({
-        "project_description": project_description,
-        "evaluation": evaluation,
-    })
-
-    return {"evaluation": evaluation}
-
-class OptimizationResult(BaseModel):
-    user_id: str
-    resume_text: str
-    job_description: str
-    optimized_resume: str
-    token_usage: dict
-
-
-# Resume Optimization Endpoint using Gemini API
+# Updated Resume Optimization Endpoint
 @app.post("/optimize_resume")
-async def optimize_resume(request: Request):
+async def optimize_resume(request: Request, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    user_info = verify_google_token(token)
+    user_id = user_info["sub"]
+
     body = await request.json()
     resume_text = body.get("resume_text")
     job_description = body.get("job_description")
-
     if not resume_text or not job_description:
-        return {"error": "Both resume_text and job_description are required."}
+        raise HTTPException(status_code=400, detail="Both resume_text and job_description are required.")
 
-    async with semaphore:
-        result = await asyncio.get_event_loop().run_in_executor(
-            None, resume_optimizer.optimize, resume_text, job_description
-        )
-
-    # Extract optimized resume text
-    optimized_text = result.get("optimized_resume", "ERROR: No response from Gemini API.")
-
-    # Generate a unique user ID and store result in MongoDB
-    user_id = str(uuid.uuid4())
-    record_id = store_optimization_results({
-        "user_id": user_id,
+    # Generate unique ID for this optimization
+    optimization_id = str(uuid.uuid4())
+    timestamp = datetime.now(UTC)
+    
+    # Create initial entry
+    initial_data = {
+        "optimization_id": optimization_id,
         "resume_text": resume_text,
         "job_description": job_description,
-        "optimized_resume": optimized_text,
-        "token_usage": {}  # Gemini API does not provide token usage info like OpenAI
-    })
-
-    return {
-        "optimized_resume": optimized_text,
-        "record_id": str(record_id),
-        "user_id": user_id
+        "status": "processing",
+        "createdAt": timestamp,
+        "updatedAt": timestamp
     }
+    store_optimization_results(user_id, initial_data)
 
+    async with semaphore:
+        try:
+            result = await asyncio.get_event_loop().run_in_executor(
+                None, resume_optimizer.optimize, user_id, resume_text, job_description
+            )
 
+            optimized_text = result.get("optimized_resume", "ERROR: No response from Gemini API.")
+            
+            # Update existing entry
+            users_collection.update_one(
+                {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
+                {"$set": {"features.resumeOptimizer.$.status": "completed",
+                          "features.resumeOptimizer.$.optimized_resume": optimized_text,
+                          "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)}}
+            )
+
+            return {"optimized_resume": optimized_text, "optimization_id": optimization_id}
+            
+        except Exception as e:
+            users_collection.update_one(
+                {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
+                {"$set": {"features.resumeOptimizer.$.status": "failed",
+                          "features.resumeOptimizer.$.error": str(e),
+                          "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)}}
+            )
+            raise HTTPException(status_code=500, detail=str(e))
+# ----------------
 # Learning Pathways Endpoint
+# ----------------
 @app.post("/learning_pathways")
-async def get_learning_pathways(request: Request):
-    """
-    Endpoint to generate a guided learning pathway for a given topic.
-    Request Body (JSON):
-    {
-        "topic": "cloud computing"
-    }
-    Response (JSON):
-    {
-        "learning_pathway": "Learning Pathway for cloud computing: ..."
-    }
-    """
+async def get_learning_pathways(request: Request, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    
+    token = authorization.split("Bearer ")[-1]
+    try:
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
     body = await request.json()
     topic = body.get("topic")
     if not topic:
-        return {"error": "Topic is required."}
+        raise HTTPException(status_code=400, detail="Topic is required.")
 
     async with semaphore:
-        pathway = await asyncio.get_event_loop().run_in_executor(
-            None, learning_pathways_instance.generate_pathway, topic
-        )
-
-    if "learning_pathway" in pathway:
-        store_learning_pathway_result({
-            "topic": topic,
-            "learning_pathway": pathway["learning_pathway"]
-        })
-
-    return pathway
-
-
-# Interview Preparation Endpoints
+        try:
+            pathway = await asyncio.get_event_loop().run_in_executor(
+                None, learning_pathways_instance.generate_pathway, user_id, topic
+            )
+            return pathway
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+# ----------------
+# Interview Question Analysis Endpoint
+# ----------------
 @app.post("/analyze_question")
-async def analyze_question(request: Request):
+async def analyze_question(request: Request, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    
+    token = authorization.split("Bearer ")[-1]
+    try:
+        user_info = verify_google_token(token)  # This must return user info
+        user_id = user_info["sub"]
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
     body = await request.json()
     question = body.get("question")
-
     if not question:
-        return {"error": "Question is required."}
+        raise HTTPException(status_code=400, detail="Question is required.")
+    
+    # Generate unique ID for this analysis
+    analysis_id = str(uuid.uuid4())
+    timestamp = datetime.now(UTC)
+    
+    # Create initial entry
+    initial_data = {
+        "analysis_id": analysis_id,
+        "question": question,
+        "status": "processing",
+        "createdAt": timestamp,
+        "updatedAt": timestamp
+    }
+    store_interview_analysis(user_id, initial_data)
 
     async with semaphore:
-        analysis = await asyncio.get_event_loop().run_in_executor(
-            None, InterviewPreparation.analyze_question, question
-        )
+        try:
+            analysis = await asyncio.get_event_loop().run_in_executor(
+                None, interview_preparation_instance.analyze_question, user_id, question
+            )
+            
+            # Update existing entry
+            users_collection.update_one(
+                {"_id": user_id, "features.interviewAnalysis.analysis_id": analysis_id},
+                {"$set": {
+                    "features.interviewAnalysis.$.status": "completed",
+                    "features.interviewAnalysis.$.analysis": analysis,
+                    "features.interviewAnalysis.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            
+            return {"analysis": analysis, "analysis_id": analysis_id}
+            
+        except Exception as e:
+            users_collection.update_one(
+                {"_id": user_id, "features.interviewAnalysis.analysis_id": analysis_id},
+                {"$set": {
+                    "features.interviewAnalysis.$.status": "failed",
+                    "features.interviewAnalysis.$.error": str(e),
+                    "features.interviewAnalysis.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            raise HTTPException(status_code=500, detail=str(e))
 
-    return analysis
-
-
+# ----------------
+# Interview Feedback Endpoint
+# ----------------
 @app.post("/feedback")
-async def interview_feedback(request: Request):
+async def interview_feedback(request: Request, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    
+    token = authorization.split("Bearer ")[-1]
+    try:
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+
     body = await request.json()
     question = body.get("question")
     user_answer = body.get("user_answer")
-
     if not question or not user_answer:
-        return {"error": "Both question and user_answer are required."}
+        raise HTTPException(status_code=400, detail="Both question and user_answer are required.")
+
+    # Generate unique ID for this feedback
+    feedback_id = str(uuid.uuid4())
+    timestamp = datetime.now(UTC)
+    
+    # Create initial entry
+    initial_data = {
+        "feedback_id": feedback_id,
+        "question": question,
+        "user_answer": user_answer,
+        "status": "processing",
+        "createdAt": timestamp,
+        "updatedAt": timestamp
+    }
+    store_interview_feedback(user_id, initial_data)
 
     async with semaphore:
-        feedback = await asyncio.get_event_loop().run_in_executor(
-            None, InterviewPreparation.feedback_on_answer, question, user_answer
-        )
-
-    if "error" not in feedback:
-        store_interview_feedback({
-            "question": question,
-            "user_answer": user_answer,
-            "feedback": feedback,
-        })
-
-    return feedback
+        try:
+            feedback = await asyncio.get_event_loop().run_in_executor(
+                None, interview_preparation_instance.feedback_on_answer, user_id, question, user_answer
+            )
+            
+            # Update existing entry
+            users_collection.update_one(
+                {"_id": user_id, "features.interviewFeedback.feedback_id": feedback_id},
+                {"$set": {
+                    "features.interviewFeedback.$.status": "completed",
+                    "features.interviewFeedback.$.feedback": feedback,
+                    "features.interviewFeedback.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            
+            return {"feedback": feedback, "feedback_id": feedback_id}
+            
+        except Exception as e:
+            users_collection.update_one(
+                {"_id": user_id, "features.interviewFeedback.feedback_id": feedback_id},
+                {"$set": {
+                    "features.interviewFeedback.$.status": "failed",
+                    "features.interviewFeedback.$.error": str(e),
+                    "features.interviewFeedback.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            raise HTTPException(status_code=500, detail=str(e))

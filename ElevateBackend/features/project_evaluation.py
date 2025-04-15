@@ -2,12 +2,17 @@ import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 import textwrap
+from datetime import datetime, UTC
+from database import store_evaluation_result
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Configure Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not found in environment variables!")
+genai.configure(api_key=GEMINI_API_KEY)
 
 class ProjectEvaluator:
     """A class to evaluate software engineering projects using Gemini AI."""
@@ -15,11 +20,12 @@ class ProjectEvaluator:
     def __init__(self, model_name="gemini-1.5-flash"):
         self.model_name = model_name
 
-    def evaluate(self, project_description: str) -> dict:
+    def evaluate(self, user_id: str, project_description: str) -> dict:
         """
         Evaluate a project description using Gemini API.
 
         Args:
+        - user_id (str): ID of the authenticated user.
         - project_description (str): The description of the project.
 
         Returns:
@@ -79,6 +85,13 @@ class ProjectEvaluator:
 
             # Extract and clean response text
             evaluation = response.text.strip() if response and response.text else "No response received."
+
+            # Store the evaluation result explicitly with user_id
+            store_evaluation_result(user_id, {
+                "project_description": project_description,
+                "evaluation": evaluation,
+                "timestamp": datetime.now(UTC)
+            })
 
             return {"evaluation": evaluation}
 
