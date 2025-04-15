@@ -104,3 +104,318 @@ const starMethodExplanation = `The STAR method is a structured manner of respond
   - **Action**: Describe the specific actions you took to address it.
   - **Result**: Share the outcomes or results of your actions, quantifying your success when possible.
   This approach helps in delivering clear and concise answers.`;
+
+
+
+
+
+// ------------------
+// Technical Guide Component
+// ------------------
+
+const TechnicalGuide = ({
+  openModal,
+}: {
+  openModal: (title: string, content: string) => void;
+}) => (
+  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
+    <h2 className="text-3xl font-bold text-gray-900 mb-8">
+      Technical Interview Guide
+    </h2>
+    <div className="space-y-4">
+      <Accordion title="Core Topics" icon="📚" initialOpen={false}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2">
+          {[
+            { title: "Arrays" },
+            { title: "Linked Lists" },
+            { title: "Trees/Graphs" },
+            { title: "Hash Tables" },
+            { title: "Stacks" },
+            { title: "Queues" },
+            { title: "Heaps" },
+            { title: "Recursion" },
+            { title: "Greedy" },
+            { title: "Dynamic Programming" },
+            { title: "Sorting Algorithms" },
+            { title: "Searching Algorithms" },
+            { title: "Bit Manipulation" },
+          ].map((topic) => (
+            <div
+              key={topic.title}
+              onClick={() =>
+                openModal(topic.title, coreTopicExplanations[topic.title])
+              }
+              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+            >
+              <h4 className="font-medium text-gray-900 mb-2">
+                {topic.title}{" "}
+                <FiInfo className="inline-block text-blue-500 ml-1" />
+              </h4>
+              <p className="text-gray-600 text-sm">
+                Click for detailed explanation.
+              </p>
+            </div>
+          ))}
+        </div>
+      </Accordion>
+      <Accordion title="LeetCode Patterns" icon="🔍">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-2">
+          {[
+            "Sliding Window",
+            "Two Pointers",
+            "Merge Intervals",
+            "Tree BFS",
+            "Tree DFS",
+            "Binary Search",
+            "Dynamic Programming",
+            "Backtracking",
+            "Greedy",
+          ].map((pattern) => (
+            <div
+              key={pattern}
+              onClick={() =>
+                openModal(pattern, leetCodePatternExplanations[pattern])
+              }
+              className="p-3 bg-white border border-blue-100 rounded-lg text-sm font-medium text-blue-800 cursor-pointer hover:bg-blue-50"
+            >
+              {pattern} <FiInfo className="inline-block text-blue-500 ml-1" />
+            </div>
+          ))}
+        </div>
+      </Accordion>
+      <Accordion title="Study Roadmap" icon="🗺️">
+        <div className="space-y-4 p-2">
+          {[
+            {
+              step: "Step 1",
+              focus: "Master Fundamental Data Structures",
+              tasks: [
+                "Arrays",
+                "Linked Lists",
+                "Stacks & Queues",
+                "Hash Tables",
+              ],
+            },
+            {
+              step: "Step 2",
+              focus: "Develop Algorithmic Foundations",
+              tasks: [
+                "Sorting Algorithms",
+                "Binary Search",
+                "Complexity Analysis",
+              ],
+            },
+            {
+              step: "Step 3",
+              focus: "Advance into Trees and Graphs",
+              tasks: ["Binary Trees", "Heaps", "BFS & DFS", "Graphs"],
+            },
+            {
+              step: "Step 4",
+              focus: "Master Dynamic Programming and Recursion",
+              tasks: [
+                "DP Techniques",
+                "Memoization & Tabulation",
+                "Classic DP Problems",
+              ],
+            },
+            {
+              step: "Step 5",
+              focus: "Solve Pattern-Based Problems",
+              tasks: [
+                "Sliding Window",
+                "Two Pointers",
+                "Fast & Slow Pointers",
+                "Prefix Sums",
+              ],
+            },
+            {
+              step: "Step 6",
+              focus: "Enhance Problem-Solving Speed and Accuracy",
+              tasks: [
+                "Timed Questions",
+                "Accuracy & Speed",
+                "Solution Reviews",
+              ],
+            },
+            {
+              step: "Step 7",
+              focus: "Build System Design Foundations",
+              tasks: [
+                "Scalability",
+                "Databases",
+                "APIs & Microservices",
+                "Distributed Systems",
+              ],
+            },
+            {
+              step: "Step 8",
+              focus: "Apply Knowledge to Real-World Projects",
+              tasks: [
+                "Full-stack Projects",
+                "Backend Development",
+                "Portfolio Building",
+              ],
+            },
+            {
+              step: "Step 9",
+              focus: "Prepare for Behavioral and Communication Skills",
+              tasks: [
+                "STAR Method",
+                "Communication Skills",
+                "Common Behavioral Questions",
+              ],
+            },
+            {
+              step: "Step 10",
+              focus: "Engage in Continuous Improvement",
+              tasks: [
+                "Performance Review",
+                "Identify Weaknesses",
+                "Iterative Practice",
+              ],
+            },
+          ].map((step) => (
+            <div
+              key={step.step}
+              onClick={() =>
+                openModal(
+                  `${step.step}: ${step.focus}`,
+                  studyRoadmapExplanations[`${step.step}: ${step.focus}`]
+                )
+              }
+              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="font-semibold text-blue-800">{step.step}</div>
+              </div>
+              <h4 className="text-gray-900 mb-2">{step.focus}</h4>
+              <ul className="grid grid-cols-2 gap-2">
+                {step.tasks.map((task) => (
+                  <li
+                    key={task}
+                    className="text-gray-700 text-sm px-3 py-1.5 bg-white rounded-md"
+                  >
+                    {task}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </Accordion>
+      <Accordion title="Resources" icon="📖">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-2">
+          {[
+            { title: "NeetCode Roadmap", url: "#" },
+            { title: "Blind 75 LeetCode", url: "#" },
+            { title: "Grokking Interviews", url: "#" },
+          ].map((resource) => (
+            <a
+              key={resource.title}
+              href={resource.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-200 transition-colors flex items-center justify-between"
+            >
+              <span className="text-gray-900">{resource.title}</span>
+              <FiExternalLink className="text-gray-400" />
+            </a>
+          ))}
+        </div>
+      </Accordion>
+    </div>
+  </div>
+);
+
+const BehavioralGuide = ({
+  openModal,
+}: {
+  openModal: (title: string, content: string) => void;
+}) => (
+  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-8">
+    <h2 className="text-3xl font-bold text-gray-900 mb-8">
+      Behavioral Interview Guide
+    </h2>
+    <div className="space-y-4">
+      <Accordion title="Common Questions" icon="💬" initialOpen={false}>
+        <div className="space-y-3 p-2">
+          {[
+            "Tell me about a challenge you overcame",
+            "Describe a leadership experience",
+            "How do you handle conflicting priorities?",
+            "Can you give an example of a time you failed?",
+          ].map((question, index) => (
+            <div
+              key={index}
+              onClick={() =>
+                openModal(question, behavioralQuestionExplanations[question])
+              }
+              className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+            >
+              <div className="flex items-center gap-3">
+                <div className="font-semibold text-green-800">
+                  Q{index + 1}.
+                </div>
+                <p className="text-gray-900">{question}</p>
+                <FiInfo className="text-blue-500" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Accordion>
+      <Accordion title="STAR Method" icon="⭐">
+        <div className="grid grid-cols-1 gap-4 p-2">
+          <div
+            onClick={() => openModal("STAR Method", starMethodExplanation)}
+            className="p-4 bg-green-50 rounded-lg cursor-pointer hover:bg-green-100"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center font-bold text-green-800" />
+              <h4 className="font-semibold text-gray-900">STAR</h4>
+            </div>
+            <p className="text-gray-700 text-sm">
+              Click to read detailed explanation of the STAR method.
+            </p>
+          </div>
+        </div>
+      </Accordion>
+      <Accordion title="Example Answers" icon="📝">
+        <div className="space-y-4 p-2">
+          <div
+            onClick={() =>
+              openModal(
+                "Team Conflict Example",
+                `**Situation:** During a project, our team faced a major conflict regarding design choices.\n\n**Task:** I was tasked with facilitating a resolution while ensuring project deadlines were met.\n\n**Action:** I organized a meeting, encouraged open dialogue, and proposed a compromise by combining the best aspects of both designs.\n\n**Result:** The team reached a consensus, and the project was delivered successfully with improved design integration.`
+              )
+            }
+            className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+          >
+            <h4 className="font-semibold text-gray-900 mb-2">
+              Team Conflict Example
+            </h4>
+            <p className="text-gray-700">
+              Click to see a detailed STAR-based explanation.
+            </p>
+          </div>
+          <div
+            onClick={() =>
+              openModal(
+                "Handling Failure Example",
+                `**Situation:** I was leading a project where we missed the initial deadline.\n\n**Task:** My task was to identify the root cause and set the team on a new path.\n\n**Action:** I held a retrospective meeting, identified process bottlenecks, and implemented daily check-ins to monitor progress.\n\n**Result:** The project was completed with only a slight delay, and our processes improved significantly for future projects.`
+              )
+            }
+            className="p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100"
+          >
+            <h4 className="font-semibold text-gray-900 mb-2">
+              Handling Failure Example
+            </h4>
+            <p className="text-gray-700">
+              Click to see another STAR-based detailed answer.
+            </p>
+          </div>
+        </div>
+      </Accordion>
+    </div>
+  </div>
+);

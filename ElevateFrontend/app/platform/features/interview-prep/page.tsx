@@ -6,19 +6,16 @@ import { useSession } from "next-auth/react";
 import {
   FiLoader,
   FiCode,
-  FiMessageSquare,
   FiChevronDown,
   FiExternalLink,
   FiStar,
-  FiUsers,
-  FiBookOpen,
   FiHelpCircle,
   FiAlertTriangle,
-  FiEdit,
   FiCheckCircle,
   FiInfo,
   FiClock,
   FiCpu,
+  FiMessageSquare,
 } from "react-icons/fi";
 import { motion } from "framer-motion";
 import SyntaxHighlighter from "react-syntax-highlighter";
@@ -27,7 +24,6 @@ import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 // ------------------
 // Type Definitions
 // ------------------
-
 interface ApproachStep {
   step: string;
   reasoning: string;
@@ -65,7 +61,7 @@ interface OptimizationTip {
 
 interface QuestionAnalysis {
   question: string;
-  // The actual analysis data is nested under "analysis"
+  // The details are nested under "analysis"
   analysis?: {
     approach?: ApproachStep[];
     complexityAnalysis?: ComplexityAnalysis;
@@ -246,7 +242,6 @@ const starMethodExplanation = `The STAR method is a structured manner of respond
 // ------------------
 // Modal Component
 // ------------------
-
 const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
   if (!isOpen) return null;
   return (
@@ -295,7 +290,6 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
 // ------------------
 // Accordion Component
 // ------------------
-
 const Accordion = ({
   title,
   children,
@@ -329,7 +323,6 @@ const Accordion = ({
 // ------------------
 // Technical Components
 // ------------------
-
 const ComplexityProgress = ({ value }: { value: string }) => {
   const getWidth = (complexity: string) => {
     const complexities: { [key: string]: number } = {
@@ -355,7 +348,7 @@ const ComplexityProgress = ({ value }: { value: string }) => {
 };
 
 const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
-  // Use nested "analysis" if available.
+  // Access nested analysis; if not present, use empty defaults.
   const nested = analysis.analysis || {};
   const approachSteps = nested.approach || [];
   const complexity = nested.complexityAnalysis;
@@ -943,8 +936,6 @@ export default function InterviewPreparation() {
   const [activeTab, setActiveTab] = useState<"breakdown" | "feedback">(
     "breakdown"
   );
-  const [generatedQuestions, setGeneratedQuestions] =
-    useState<InterviewPrepResponse | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState("");
   const [modalContent, setModalContent] = useState("");
@@ -974,7 +965,8 @@ export default function InterviewPreparation() {
 
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
 
       const res = await axios.post(
         `${backendUrl}/analyze_question`,
@@ -987,9 +979,8 @@ export default function InterviewPreparation() {
         }
       );
 
-      // The backend returns the analysis object which is nested; we set it directly.
       setAnalysis(res.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error analyzing question:", error);
       setError("Failed to analyze question. Please try again.");
     } finally {
@@ -1009,7 +1000,8 @@ export default function InterviewPreparation() {
 
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
 
       const res = await axios.post(
         `${backendUrl}/feedback`,
@@ -1026,7 +1018,7 @@ export default function InterviewPreparation() {
       );
 
       setFeedback(res.data);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error submitting answer:", error);
       setError("Failed to get feedback. Please try again.");
     } finally {

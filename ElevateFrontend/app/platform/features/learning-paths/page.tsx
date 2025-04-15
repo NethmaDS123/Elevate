@@ -98,7 +98,8 @@ export default function LearningPathwaysPage() {
     setLoading(true);
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
 
       const res = await fetch(`${backendUrl}/learning_pathways`, {
         method: "POST",

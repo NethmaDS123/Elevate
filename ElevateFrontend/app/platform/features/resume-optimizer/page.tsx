@@ -31,7 +31,8 @@ export default function ResumeOptimizer() {
 
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
 
       const res = await axios.post<OptimizationResponse>(
         `${backendUrl}/optimize_resume`,
