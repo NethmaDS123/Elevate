@@ -1,10 +1,9 @@
+"use client";
+
+import { SessionProvider } from "next-auth/react";
 import Footer from "@/components/Footer";
 import "./globals.css";
-
-export const metadata = {
-  title: "Elevate",
-  description: "AI-driven career development platform",
-};
+import "@/lib/axiosInterceptors"; // Import the interceptor globally
 
 export default function RootLayout({
   children,
@@ -13,13 +12,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="text-white relative">
-        {/* Dot Background */}
-
-        {/* Main Content */}
+      <body className=" relative">
         <div className="relative z-10 flex flex-col min-h-screen">
-          <main className="flex-grow">{children}</main>
-
+          <SessionProvider>
+            <main className="flex-grow">{children}</main>
+          </SessionProvider>
           <Footer />
         </div>
       </body>

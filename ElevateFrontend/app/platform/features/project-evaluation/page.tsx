@@ -2,12 +2,12 @@
 
 import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 import {
   FiAlertTriangle,
   FiEdit3,
   FiLoader,
   FiStar,
-  FiCode,
   FiCheckCircle,
   FiCpu,
   FiTrendingUp,
@@ -15,7 +15,7 @@ import {
   FiUsers,
 } from "react-icons/fi";
 
-// Function to parse the AI-generated evaluation into structured data
+// Parse AI-generated evaluation into structured data
 function parseEvaluation(evaluation: string): Record<string, string> {
   const sections = evaluation.split("\n").filter((line) => line.trim() !== "");
   const result: Record<string, string> = {};
@@ -34,7 +34,7 @@ function parseEvaluation(evaluation: string): Record<string, string> {
   return result;
 }
 
-// Icons for different evaluation categories
+// Icons for evaluation categories
 const getSectionIcon = (key: string) => {
   const lowerKey = key.toLowerCase();
   if (lowerKey.includes("innovation"))
@@ -62,6 +62,7 @@ const getSectionColor = (key: string) => {
 };
 
 export default function ProjectEvaluationPage() {
+  const { data: session, status } = useSession();
   const [projectDescription, setProjectDescription] = useState("");
   const [evaluation, setEvaluation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -73,6 +74,11 @@ export default function ProjectEvaluationPage() {
       setError("");
       setEvaluation("");
 
+      if (!session) {
+        setError("You must be logged in to evaluate a project.");
+        return;
+      }
+
       if (!projectDescription.trim()) {
         setError("Project description is required.");
         return;
@@ -83,9 +89,13 @@ export default function ProjectEvaluationPage() {
       try {
         const backendUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
         const res = await fetch(`${backendUrl}/evaluate_project`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.user.id_token}`,
+          },
           body: JSON.stringify({ project_description: projectDescription }),
         });
 
@@ -99,13 +109,32 @@ export default function ProjectEvaluationPage() {
       } catch (err) {
         console.error("Error during evaluation:", err);
         setError("An error occurred while evaluating the project.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     },
-    [projectDescription]
+    [projectDescription, session]
   );
 
   const parsedOutput = evaluation ? parseEvaluation(evaluation) : null;
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <FiLoader className="animate-spin h-8 w-8 text-purple-600" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-lg font-medium text-gray-700">
+          Please log in to access Project Evaluation.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -113,20 +142,19 @@ export default function ProjectEvaluationPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
         >
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3 bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 inline-block">
+            <h1 className="text-4xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text inline-block">
               AI Project Evaluator
             </h1>
-            <p className="text-lg text-gray-600 mt-2">
-              Receive AI-powered feedback on your project’s strengths and areas
-              for improvement.
+            <p className="text-lg text-gray-600">
+              AI-powered feedback on your project's strengths and areas for
+              improvement.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 transition-all duration-200 hover:shadow-xl">
+            <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl">
               <label
                 htmlFor="projectDescription"
                 className="block text-lg font-semibold text-gray-800 mb-4 flex items-center"
@@ -136,7 +164,7 @@ export default function ProjectEvaluationPage() {
               </label>
               <textarea
                 id="projectDescription"
-                className="w-full h-48 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-700 placeholder-gray-400 resize-none transition-all duration-200"
+                className="w-full h-48 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none"
                 placeholder="Describe your project in detail..."
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
@@ -154,11 +182,11 @@ export default function ProjectEvaluationPage() {
               </motion.div>
             )}
 
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex justify-between gap-4">
               <button
                 type="button"
                 onClick={() => setProjectDescription("")}
-                className="px-5 py-2.5 text-gray-600 hover:text-gray-800 font-medium rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                className="px-5 py-2.5 text-gray-600 rounded-lg hover:bg-gray-100"
               >
                 Clear Input
               </button>
@@ -166,37 +194,32 @@ export default function ProjectEvaluationPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold rounded-lg shadow-md transform transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:transform-none flex items-center"
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg flex items-center"
               >
                 {loading ? (
-                  <FiLoader className="animate-spin mr-2" />
+                  <>
+                    <FiLoader className="animate-spin mr-2" /> Analyzing...
+                  </>
                 ) : (
-                  <FiStar className="mr-2" />
+                  <>
+                    <FiStar className="mr-2" /> Evaluate Project
+                  </>
                 )}
-                {loading ? "Analyzing..." : "Evaluate Project"}
               </button>
             </div>
           </form>
 
           <AnimatePresence>
             {evaluation && parsedOutput && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="mt-8 space-y-6"
-              >
-                {Object.entries(parsedOutput).map(([key, value], index) => (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                {Object.entries(parsedOutput).map(([key, value]) => (
                   <motion.div
                     key={key}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                    className={`p-6 rounded-xl border-l-4 ${getSectionColor(
+                    className={`mt-6 p-6 rounded-xl border-l-4 ${getSectionColor(
                       key
-                    )} shadow-sm`}
+                    )}`}
                   >
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2 flex items-center">
+                    <h3 className="text-xl font-semibold flex items-center">
                       {getSectionIcon(key)} {key}
                     </h3>
                     <p className="text-gray-600">{value}</p>

@@ -124,7 +124,7 @@ export default function Navbar() {
             <button
               onClick={() => {
                 setIsOpen(false);
-                router.push("/signup");
+                router.push("/signin");
               }}
               className="block py-2 mt-4 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-medium transition transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 w-full mx-auto max-w-xs"
             >

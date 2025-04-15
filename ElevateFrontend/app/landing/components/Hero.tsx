@@ -57,7 +57,7 @@ export default function Hero() {
           className="mt-10 flex flex-col md:flex-row gap-4 justify-center"
         >
           <button
-            onClick={() => router.push("/platform/features/dashboard")}
+            onClick={() => router.push("/signin")}
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-14 rounded-full text-lg font-semibold shadow-lg transition-all hover:scale-105 focus:ring-4 focus:ring-blue-300 focus:outline-none"
           >
             Get Started for Free

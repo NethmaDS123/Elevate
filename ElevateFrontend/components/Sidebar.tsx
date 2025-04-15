@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import {
   FiHome,
   FiFileText,
   FiClipboard,
   FiBookOpen,
   FiUser,
-  FiSettings,
   FiArrowLeft,
   FiCheckCircle,
 } from "react-icons/fi";
@@ -25,7 +25,6 @@ export default function Sidebar() {
       onMouseEnter={() => setIsOpen(true)}
       onMouseLeave={() => setIsOpen(false)}
     >
-      {/* Clickable Elevate Logo */}
       <Link
         href="/"
         className="flex items-center gap-3 mb-8 overflow-hidden group"
@@ -78,12 +77,18 @@ export default function Sidebar() {
         />
 
         <div className="pt-4 mt-4 border-t border-gray-700">
-          <SidebarLink
-            href="/logout"
-            icon={<FiArrowLeft className="w-5 h-5" />}
-            label="Logout"
-            isOpen={isOpen}
-          />
+          <button
+            onClick={() => signOut({ callbackUrl: "/signin" })}
+            className="flex items-center gap-3 p-3 hover:bg-gray-800 rounded-lg transition-colors group w-full text-left"
+          >
+            <FiArrowLeft className="w-5 h-5 flex-shrink-0" />
+            <motion.span
+              animate={{ opacity: isOpen ? 1 : 0 }}
+              className="whitespace-nowrap text-sm transition-opacity"
+            >
+              Logout
+            </motion.span>
+          </button>
         </div>
       </nav>
     </motion.aside>
