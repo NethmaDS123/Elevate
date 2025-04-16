@@ -61,7 +61,6 @@ interface OptimizationTip {
 
 interface QuestionAnalysis {
   question: string;
-  // The details are nested under "analysis"
   analysis?: {
     approach?: ApproachStep[];
     complexityAnalysis?: ComplexityAnalysis;
@@ -69,7 +68,14 @@ interface QuestionAnalysis {
     sampleSolution?: SampleSolution;
     optimizationTips?: OptimizationTip[];
     commonPitfalls?: CommonPitfall[];
-    [key: string]: any;
+    [key: string]:
+      | ApproachStep[]
+      | ComplexityAnalysis
+      | EdgeCase[]
+      | SampleSolution
+      | OptimizationTip[]
+      | CommonPitfall[]
+      | undefined;
   };
 }
 
@@ -104,11 +110,6 @@ interface UserAnswerFeedback {
     title: string;
     url: string;
   }[];
-}
-
-interface InterviewPrepResponse {
-  questions: string[];
-  type: "technical" | "behavioral";
 }
 
 interface AccordionProps {
@@ -324,7 +325,7 @@ const Accordion = ({
 // Technical Components
 // ------------------
 const ComplexityProgress = ({ value }: { value: string }) => {
-  const getWidth = (complexity: string) => {
+  const getWidth = (_complexity: string) => {
     const complexities: { [key: string]: number } = {
       "O(1)": 10,
       "O(log n)": 20,
@@ -1018,7 +1019,7 @@ export default function InterviewPreparation() {
       );
 
       setFeedback(res.data);
-    } catch (error: unknown) {
+    } catch (error) {
       console.error("Error submitting answer:", error);
       setError("Failed to get feedback. Please try again.");
     } finally {

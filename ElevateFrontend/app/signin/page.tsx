@@ -9,7 +9,8 @@ import { Loader2 } from "lucide-react";
 
 export default function SignInPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+
+  const { status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl =
     searchParams.get("callbackUrl") || "/platform/features/dashboard";

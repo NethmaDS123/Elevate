@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import {
@@ -19,7 +19,6 @@ import {
 function parseEvaluation(evaluation: string): Record<string, string> {
   const sections = evaluation.split("\n").filter((line) => line.trim() !== "");
   const result: Record<string, string> = {};
-
   let currentKey = "";
   sections.forEach((line) => {
     if (line.includes(":")) {
@@ -30,7 +29,6 @@ function parseEvaluation(evaluation: string): Record<string, string> {
       result[currentKey] += `\n${line.trim()}`;
     }
   });
-
   return result;
 }
 
@@ -102,6 +100,8 @@ export default function ProjectEvaluationPage() {
         const data = await res.json();
 
         if (res.ok) {
+          // Assuming that the API returns an object that might look like:
+          // { evaluation: { evaluation: "<analysis text>" } }
           setEvaluation(data.evaluation?.evaluation || data.evaluation);
         } else {
           setError(data.error || "Something went wrong.");
@@ -148,7 +148,7 @@ export default function ProjectEvaluationPage() {
               AI Project Evaluator
             </h1>
             <p className="text-lg text-gray-600">
-              AI-powered feedback on your project's strengths and areas for
+              AI-powered feedback on your project&apos;s strengths and areas for
               improvement.
             </p>
           </div>
