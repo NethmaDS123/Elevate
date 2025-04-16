@@ -1,3 +1,138 @@
+"use client";
+
+import { useState } from "react";
+import axios from "axios";
+import { useSession } from "next-auth/react";
+import {
+  FiLoader,
+  FiCode,
+  FiChevronDown,
+  FiExternalLink,
+  FiStar,
+  FiHelpCircle,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiInfo,
+  FiClock,
+  FiCpu,
+  FiMessageSquare,
+} from "react-icons/fi";
+import { motion } from "framer-motion";
+import SyntaxHighlighter from "react-syntax-highlighter";
+import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
+
+// ------------------
+// Type Definitions
+// ------------------
+interface ApproachStep {
+  step: string;
+  reasoning: string;
+  keyOperation: string;
+}
+
+interface ComplexityAnalysis {
+  time: {
+    value: string;
+    explanation: string;
+  };
+  space: {
+    value: string;
+    explanation: string;
+  };
+  comparison: string;
+}
+
+interface EdgeCase {
+  case: string;
+  handling: string;
+  testExample: string;
+}
+
+interface SampleSolution {
+  code: string;
+  codeExplanation: string;
+}
+
+interface OptimizationTip {
+  tip: string;
+  benefit: string;
+  tradeoff: string;
+}
+
+interface QuestionAnalysis {
+  question: string;
+  analysis?: {
+    approach?: ApproachStep[];
+    complexityAnalysis?: ComplexityAnalysis;
+    edgeCases?: EdgeCase[];
+    sampleSolution?: SampleSolution;
+    optimizationTips?: OptimizationTip[];
+    commonPitfalls?: CommonPitfall[];
+    [key: string]:
+      | ApproachStep[]
+      | ComplexityAnalysis
+      | EdgeCase[]
+      | SampleSolution
+      | OptimizationTip[]
+      | CommonPitfall[]
+      | undefined;
+  };
+}
+
+interface FeedbackScore {
+  overall: number;
+  categories: {
+    correctness: number;
+    efficiency: number;
+    readability: number;
+  };
+}
+
+interface ImprovementArea {
+  issue: string;
+  severity: string;
+  suggestion: string;
+  example: string;
+}
+
+interface UserAnswerFeedback {
+  score: FeedbackScore;
+  strengths: string[];
+  improvementAreas: ImprovementArea[];
+  alternativeApproaches: string[];
+  codeQuality: {
+    structure: string;
+    naming: string;
+    bestPractices: string;
+  };
+  recommendedResources: {
+    type: string;
+    title: string;
+    url: string;
+  }[];
+}
+
+interface AccordionProps {
+  title: string;
+  children: React.ReactNode;
+  icon: React.ReactNode;
+  initialOpen?: boolean;
+}
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+}
+
+// CommonPitfalls interface
+interface CommonPitfall {
+  mistake: string;
+  consequence: string;
+  prevention: string;
+}
+
 // ------------------
 // Detailed Explanation Data
 // ------------------
@@ -105,9 +240,373 @@ const starMethodExplanation = `The STAR method is a structured manner of respond
   - **Result**: Share the outcomes or results of your actions, quantifying your success when possible.
   This approach helps in delivering clear and concise answers.`;
 
+// ------------------
+// Modal Component
+// ------------------
+const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.15 }}
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative border border-gray-100"
+      >
+        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
+          <h3 className="text-2xl font-semibold text-gray-900">{title}</h3>
+          <button
+            onClick={onClose}
+            className="p-2 -m-2 rounded-full hover:bg-gray-50 transition-colors text-gray-500 hover:text-gray-900"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <div className="p-6 pt-4 text-gray-700 leading-relaxed">{children}</div>
+        <div className="flex justify-end gap-3 p-6 pt-4 border-t border-gray-100">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
+// ------------------
+// Accordion Component
+// ------------------
+const Accordion = ({
+  title,
+  children,
+  icon,
+  initialOpen = false,
+}: AccordionProps) => {
+  const [isOpen, setIsOpen] = useState(initialOpen);
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 mb-4 transition-all">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full p-5 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-blue-600 text-lg">{icon}</span>
+          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        </div>
+        <FiChevronDown
+          className={`w-5 h-5 transform transition-transform ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div className={`px-5 pb-5 ${isOpen ? "block" : "hidden"} space-y-4`}>
+        {children}
+      </div>
+    </div>
+  );
+};
 
+// ------------------
+// Technical Components
+// ------------------
+const ComplexityProgress = ({ value }: { value: string }) => {
+  const getWidth = (_complexity: string) => {
+    const complexities: { [key: string]: number } = {
+      "O(1)": 10,
+      "O(log n)": 20,
+      "O(n)": 40,
+      "O(n log n)": 60,
+      "O(n²)": 80,
+      "O(2ⁿ)": 95,
+      "O(n!)": 100,
+    };
+    return complexities[value] || 50;
+  };
 
+  return (
+    <div className="mt-2 bg-blue-100 rounded-full h-2">
+      <div
+        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
+        style={{ width: `${getWidth(value)}%` }}
+      ></div>
+    </div>
+  );
+};
+
+const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
+  // Access nested analysis; if not present, use empty defaults.
+  const nested = analysis.analysis || {};
+  const approachSteps = nested.approach || [];
+  const complexity = nested.complexityAnalysis;
+  const edgeCases = nested.edgeCases || [];
+  const sampleSolution = nested.sampleSolution;
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+      <div className="flex items-center gap-3 mb-6">
+        <FiHelpCircle className="text-blue-600 w-6 h-6" />
+        <h3 className="text-xl font-semibold text-gray-900">
+          Problem Breakdown
+        </h3>
+      </div>
+      <Accordion title="Step-by-Step Approach" icon="🧠" initialOpen={true}>
+        <div className="space-y-4">
+          {approachSteps.length > 0 ? (
+            approachSteps.map((step, index) => (
+              <div key={index} className="group relative pl-8">
+                <div className="absolute left-0 top-0 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-blue-800 text-sm">
+                  {index + 1}
+                </div>
+                <div className="p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-200 transition-colors">
+                  <h4 className="font-medium text-gray-900 mb-2">
+                    {step.step}
+                  </h4>
+                  <p className="text-gray-600 text-sm mb-3">{step.reasoning}</p>
+                  <div className="flex items-center gap-2 text-xs text-blue-600">
+                    <FiCode />
+                    <span className="font-mono">
+                      Key Operation: {step.keyOperation}
+                    </span>
+                  </div>
+                  {index < approachSteps.length - 1 && (
+                    <div className="absolute -bottom-4 left-3 w-px h-8 bg-gray-200 group-hover:bg-blue-200"></div>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-600">No approach data available.</p>
+          )}
+        </div>
+      </Accordion>
+
+      <Accordion title="Complexity Analysis" icon="⏳">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-medium text-blue-800 flex items-center gap-2">
+                <FiClock className="inline-block" /> Time Complexity
+              </h4>
+              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                {complexity?.time.value || "N/A"}
+              </span>
+            </div>
+            <p className="text-gray-700 text-sm mb-3">
+              {complexity?.time.explanation || ""}
+            </p>
+            <ComplexityProgress value={complexity?.time.value || ""} />
+          </div>
+          <div className="p-4 bg-purple-50 rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="text-sm font-medium text-purple-800 flex items-center gap-2">
+                <FiCpu className="inline-block" /> Space Complexity
+              </h4>
+              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
+                {complexity?.space.value || "N/A"}
+              </span>
+            </div>
+            <p className="text-gray-700 text-sm mb-3">
+              {complexity?.space.explanation || ""}
+            </p>
+            <ComplexityProgress value={complexity?.space.value || ""} />
+          </div>
+          <div className="p-4 bg-green-50 rounded-lg">
+            <h4 className="text-sm font-medium text-green-800 mb-2">
+              Approach Comparison
+            </h4>
+            <div className="flex items-center gap-2 text-sm">
+              <FiInfo className="text-green-600" />
+              <p className="text-gray-700">{complexity?.comparison || ""}</p>
+            </div>
+          </div>
+        </div>
+      </Accordion>
+
+      <Accordion title="Edge Cases & Solutions" icon="⚠️">
+        <div className="space-y-4">
+          {edgeCases.length > 0 ? (
+            edgeCases.map((edgeCase, index) => (
+              <div key={index} className="p-4 bg-red-50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center text-red-800 text-sm">
+                    {index + 1}
+                  </div>
+                  <h4 className="font-medium text-red-800">{edgeCase.case}</h4>
+                </div>
+                <p className="text-gray-700 text-sm ml-8 mb-2">
+                  {edgeCase.handling}
+                </p>
+                <div className="ml-8">
+                  <SyntaxHighlighter
+                    language="python"
+                    style={atomOneDark}
+                    className="rounded-lg text-sm p-3"
+                  >
+                    {edgeCase.testExample}
+                  </SyntaxHighlighter>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="text-gray-600">No edge case data available.</p>
+          )}
+        </div>
+      </Accordion>
+
+      <Accordion title="Optimized Solution" icon="🚀">
+        <div className="space-y-6">
+          <div className="rounded-lg overflow-hidden">
+            <SyntaxHighlighter
+              language="python"
+              style={atomOneDark}
+              className="text-sm p-4"
+              showLineNumbers
+            >
+              {sampleSolution
+                ? sampleSolution.code
+                : "No solution code available."}
+            </SyntaxHighlighter>
+          </div>
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h4 className="text-sm font-medium text-blue-800 mb-3">
+              Code Explanation
+            </h4>
+            <div className="space-y-2 text-gray-700 text-sm">
+              {sampleSolution && sampleSolution.codeExplanation
+                ? sampleSolution.codeExplanation.split("\n").map((line, i) => (
+                    <div key={i} className="flex gap-3">
+                      <div className="text-blue-600">▸</div>
+                      <p>{line}</p>
+                    </div>
+                  ))
+                : "No code explanation available."}
+            </div>
+          </div>
+        </div>
+      </Accordion>
+    </div>
+  );
+};
+
+const AnswerFeedback = ({ feedback }: { feedback: UserAnswerFeedback }) => (
+  <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
+    <div className="flex items-center gap-3 mb-6">
+      <FiStar className="text-green-600 w-6 h-6" />
+      <h3 className="text-xl font-semibold text-gray-900">Detailed Feedback</h3>
+      <div className="ml-auto flex items-center gap-2">
+        <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+          Score: {feedback.score.overall}/10
+        </div>
+        <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+          Correctness: {feedback.score.categories.correctness}/5
+        </div>
+      </div>
+    </div>
+    <Accordion title="Feedback Breakdown" icon="📊" initialOpen={true}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 bg-green-50 rounded-lg">
+          <h4 className="text-sm font-medium text-green-800 mb-3">Strengths</h4>
+          <ul className="space-y-2">
+            {feedback.strengths.map((strength, index) => (
+              <li key={index} className="flex items-start gap-2">
+                <FiCheckCircle className="text-green-600 mt-1" />
+                <p className="text-gray-700">{strength}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="p-4 bg-yellow-50 rounded-lg">
+          <h4 className="text-sm font-medium text-yellow-800 mb-3">
+            Improvement Areas
+          </h4>
+          <div className="space-y-3">
+            {feedback.improvementAreas.map((area, index) => (
+              <div key={index} className="border-l-4 border-red-200 pl-3">
+                <div className="flex items-center gap-2 text-red-800">
+                  <FiAlertTriangle />
+                  <span className="font-medium">{area.issue}</span>
+                  <span className="text-xs px-2 py-1 bg-red-100 rounded-full">
+                    {area.severity} Priority
+                  </span>
+                </div>
+                <p className="text-gray-700 text-sm mt-1 ml-6">
+                  {area.suggestion}
+                </p>
+                {area.example && (
+                  <div className="ml-6 mt-2">
+                    <SyntaxHighlighter
+                      language="python"
+                      style={atomOneDark}
+                      className="rounded-lg text-xs p-2"
+                    >
+                      {area.example}
+                    </SyntaxHighlighter>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Accordion>
+    <Accordion title="Code Quality Assessment" icon="📝">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 bg-blue-50 rounded-lg">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Structure</h4>
+          <p className="text-gray-700 text-sm">
+            {feedback.codeQuality.structure}
+          </p>
+        </div>
+        <div className="p-4 bg-purple-50 rounded-lg">
+          <h4 className="text-sm font-medium text-purple-800 mb-2">Naming</h4>
+          <p className="text-gray-700 text-sm">{feedback.codeQuality.naming}</p>
+        </div>
+        <div className="p-4 bg-green-50 rounded-lg">
+          <h4 className="text-sm font-medium text-green-800 mb-2">
+            Best Practices
+          </h4>
+          <p className="text-gray-700 text-sm">
+            {feedback.codeQuality.bestPractices}
+          </p>
+        </div>
+      </div>
+    </Accordion>
+    <Accordion title="Recommended Resources" icon="📚">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {feedback.recommendedResources.map((resource, index) => (
+          <a
+            key={index}
+            href={resource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-200 transition-colors flex items-center justify-between"
+          >
+            <div>
+              <span className="text-gray-900 block">{resource.title}</span>
+              <span className="text-gray-500 text-sm">{resource.type}</span>
+            </div>
+            <FiExternalLink className="text-gray-400" />
+          </a>
+        ))}
+      </div>
+    </Accordion>
+  </div>
+);
 
 // ------------------
 // Technical Guide Component
@@ -419,3 +918,293 @@ const BehavioralGuide = ({
     </div>
   </div>
 );
+
+// ------------------
+// Main InterviewPreparation Component
+// ------------------
+
+export default function InterviewPreparation() {
+  const { data: session, status } = useSession();
+  const [error, setError] = useState("");
+  const [prepType, setPrepType] = useState<"technical" | "behavioral">(
+    "technical"
+  );
+  const [userQuestion, setUserQuestion] = useState("");
+  const [userAnswer, setUserAnswer] = useState("");
+  const [analysis, setAnalysis] = useState<QuestionAnalysis | null>(null);
+  const [feedback, setFeedback] = useState<UserAnswerFeedback | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"breakdown" | "feedback">(
+    "breakdown"
+  );
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalContent, setModalContent] = useState("");
+
+  const openModal = (title: string, content: string) => {
+    setModalTitle(title);
+    setModalContent(content);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setModalTitle("");
+    setModalContent("");
+  };
+
+  const handleQuestionAnalysis = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    if (!session?.user?.id_token) {
+      setError("You must be logged in to analyze questions.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
+
+      const res = await axios.post(
+        `${backendUrl}/analyze_question`,
+        { question: userQuestion },
+        {
+          headers: {
+            Authorization: `Bearer ${session.user.id_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setAnalysis(res.data);
+    } catch (error: unknown) {
+      console.error("Error analyzing question:", error);
+      setError("Failed to analyze question. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAnswerSubmit = async () => {
+    setError("");
+    setLoading(true);
+
+    if (!session?.user?.id_token) {
+      setError("You must be logged in to submit answers.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
+
+      const res = await axios.post(
+        `${backendUrl}/feedback`,
+        {
+          question: analysis?.question,
+          user_answer: userAnswer,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${session.user.id_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setFeedback(res.data);
+    } catch (error) {
+      console.error("Error submitting answer:", error);
+      setError("Failed to get feedback. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <FiLoader className="animate-spin h-8 w-8 text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-lg font-medium text-gray-700">
+          Please log in to access Interview Preparation.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8">
+      <Modal isOpen={modalOpen} onClose={closeModal} title={modalTitle}>
+        <p className="text-gray-700 whitespace-pre-line">{modalContent}</p>
+      </Modal>
+
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Elevate Interview Preparation
+          </h1>
+          <p className="text-gray-600 text-lg">
+            Technical Excellence Meets Strategic Communication
+          </p>
+        </header>
+
+        <div className="grid grid-cols-2 gap-4 mb-12">
+          <button
+            onClick={() => setPrepType("technical")}
+            className={`p-6 rounded-xl transition-all ${
+              prepType === "technical"
+                ? "border-2 border-blue-600 bg-white shadow-lg"
+                : "border-2 border-gray-200 hover:border-blue-200 bg-white"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`p-3 rounded-lg ${
+                  prepType === "technical" ? "bg-blue-600" : "bg-gray-200"
+                }`}
+              >
+                <FiCode className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Technical
+                </h3>
+                <p className="text-gray-600 text-sm">DSA, System Design</p>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setPrepType("behavioral")}
+            className={`p-6 rounded-xl transition-all ${
+              prepType === "behavioral"
+                ? "border-2 border-green-600 bg-white shadow-lg"
+                : "border-2 border-gray-200 hover:border-green-200 bg-white"
+            }`}
+          >
+            <div className="flex items-center gap-4">
+              <div
+                className={`p-3 rounded-lg ${
+                  prepType === "behavioral" ? "bg-green-600" : "bg-gray-200"
+                }`}
+              >
+                <FiMessageSquare className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-left">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Behavioral
+                </h3>
+                <p className="text-gray-600 text-sm">STAR Method, Examples</p>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {prepType === "technical" ? (
+          <TechnicalGuide openModal={openModal} />
+        ) : (
+          <BehavioralGuide openModal={openModal} />
+        )}
+
+        <form
+          onSubmit={handleQuestionAnalysis}
+          className="bg-white rounded-xl border border-gray-200 p-8 mb-8"
+        >
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Analyze Coding Question
+              </label>
+              <textarea
+                placeholder="Paste LeetCode/etc question..."
+                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none h-32 text-gray-900 placeholder-gray-400"
+                value={userQuestion}
+                onChange={(e) => setUserQuestion(e.target.value)}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <FiLoader className="animate-spin h-5 w-5" />
+                  Analyzing...
+                </div>
+              ) : (
+                "Generate Breakdown"
+              )}
+            </button>
+          </div>
+        </form>
+
+        {analysis && (
+          <div className="space-y-8">
+            <div className="bg-white rounded-xl border border-gray-200 p-8">
+              <div className="flex gap-4 mb-6">
+                <button
+                  onClick={() => setActiveTab("breakdown")}
+                  className={`px-4 py-2 rounded-lg ${
+                    activeTab === "breakdown"
+                      ? "bg-blue-100 text-blue-800"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Breakdown
+                </button>
+                <button
+                  onClick={() => setActiveTab("feedback")}
+                  className={`px-4 py-2 rounded-lg ${
+                    activeTab === "feedback"
+                      ? "bg-green-100 text-green-800"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Your Solution
+                </button>
+              </div>
+              {activeTab === "feedback" ? (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Your Answer
+                    </label>
+                    <textarea
+                      placeholder="Write your solution..."
+                      className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none h-48 text-gray-900 placeholder-gray-400 font-mono text-sm"
+                      value={userAnswer}
+                      onChange={(e) => setUserAnswer(e.target.value)}
+                    />
+                  </div>
+                  <button
+                    onClick={handleAnswerSubmit}
+                    className="py-3 px-6 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+                  >
+                    Get Feedback
+                  </button>
+                  {feedback && <AnswerFeedback feedback={feedback} />}
+                </div>
+              ) : (
+                <QuestionBreakdown analysis={analysis} />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

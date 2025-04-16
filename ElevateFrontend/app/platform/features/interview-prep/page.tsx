@@ -1,23 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import {
-  FiLoader,
-  FiCode,
-  FiChevronDown,
-  FiExternalLink,
-  FiStar,
-  FiHelpCircle,
   FiAlertTriangle,
+  FiEdit3,
+  FiLoader,
+  FiStar,
   FiCheckCircle,
-  FiInfo,
-  FiClock,
   FiCpu,
+  FiTrendingUp,
+  FiSettings,
+  FiChevronDown,
+  FiHelpCircle,
+  FiClock,
+  FiInfo,
+  FiExternalLink,
   FiMessageSquare,
+  FiCode,
 } from "react-icons/fi";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
@@ -325,7 +328,7 @@ const Accordion = ({
 // Technical Components
 // ------------------
 const ComplexityProgress = ({ value }: { value: string }) => {
-  const getWidth = (_complexity: string) => {
+  const getWidth = (_complexity: string): number => {
     const complexities: { [key: string]: number } = {
       "O(1)": 10,
       "O(log n)": 20,
@@ -349,10 +352,8 @@ const ComplexityProgress = ({ value }: { value: string }) => {
 };
 
 const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
-  // Access nested analysis; if not present, use empty defaults.
   const nested = analysis.analysis || {};
   const approachSteps = nested.approach || [];
-  const complexity = nested.complexityAnalysis;
   const edgeCases = nested.edgeCases || [];
   const sampleSolution = nested.sampleSolution;
 
@@ -403,13 +404,15 @@ const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
                 <FiClock className="inline-block" /> Time Complexity
               </h4>
               <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                {complexity?.time.value || "N/A"}
+                {nested.complexityAnalysis?.time.value || "N/A"}
               </span>
             </div>
             <p className="text-gray-700 text-sm mb-3">
-              {complexity?.time.explanation || ""}
+              {nested.complexityAnalysis?.time.explanation || ""}
             </p>
-            <ComplexityProgress value={complexity?.time.value || ""} />
+            <ComplexityProgress
+              value={nested.complexityAnalysis?.time.value || ""}
+            />
           </div>
           <div className="p-4 bg-purple-50 rounded-lg">
             <div className="flex justify-between items-center mb-2">
@@ -417,13 +420,15 @@ const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
                 <FiCpu className="inline-block" /> Space Complexity
               </h4>
               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs">
-                {complexity?.space.value || "N/A"}
+                {nested.complexityAnalysis?.space.value || "N/A"}
               </span>
             </div>
             <p className="text-gray-700 text-sm mb-3">
-              {complexity?.space.explanation || ""}
+              {nested.complexityAnalysis?.space.explanation || ""}
             </p>
-            <ComplexityProgress value={complexity?.space.value || ""} />
+            <ComplexityProgress
+              value={nested.complexityAnalysis?.space.value || ""}
+            />
           </div>
           <div className="p-4 bg-green-50 rounded-lg">
             <h4 className="text-sm font-medium text-green-800 mb-2">
@@ -431,7 +436,9 @@ const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
             </h4>
             <div className="flex items-center gap-2 text-sm">
               <FiInfo className="text-green-600" />
-              <p className="text-gray-700">{complexity?.comparison || ""}</p>
+              <p className="text-gray-700">
+                {nested.complexityAnalysis?.comparison || ""}
+              </p>
             </div>
           </div>
         </div>
@@ -611,7 +618,6 @@ const AnswerFeedback = ({ feedback }: { feedback: UserAnswerFeedback }) => (
 // ------------------
 // Technical Guide Component
 // ------------------
-
 const TechnicalGuide = ({
   openModal,
 }: {
@@ -919,10 +925,6 @@ const BehavioralGuide = ({
   </div>
 );
 
-// ------------------
-// Main InterviewPreparation Component
-// ------------------
-
 export default function InterviewPreparation() {
   const { data: session, status } = useSession();
   const [error, setError] = useState("");
@@ -953,63 +955,57 @@ export default function InterviewPreparation() {
     setModalContent("");
   };
 
-  const handleQuestionAnalysis = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+  const handleQuestionAnalysis = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError("");
+      setLoading(true);
+      if (!session?.user?.id_token) {
+        setError("You must be logged in to analyze questions.");
+        setLoading(false);
+        return;
+      }
 
-    if (!session?.user?.id_token) {
-      setError("You must be logged in to analyze questions.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        "https://elevatebackend.onrender.com";
-
-      const res = await axios.post(
-        `${backendUrl}/analyze_question`,
-        { question: userQuestion },
-        {
-          headers: {
-            Authorization: `Bearer ${session.user.id_token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      setAnalysis(res.data);
-    } catch (error: unknown) {
-      console.error("Error analyzing question:", error);
-      setError("Failed to analyze question. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        const backendUrl =
+          process.env.NEXT_PUBLIC_BACKEND_URL ||
+          "https://elevatebackend.onrender.com";
+        const res = await axios.post(
+          `${backendUrl}/analyze_question`,
+          { question: userQuestion },
+          {
+            headers: {
+              Authorization: `Bearer ${session.user.id_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        setAnalysis(res.data);
+      } catch (err: unknown) {
+        console.error("Error analyzing question:", err);
+        setError("Failed to analyze question. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userQuestion, session]
+  );
 
   const handleAnswerSubmit = async () => {
     setError("");
     setLoading(true);
-
     if (!session?.user?.id_token) {
       setError("You must be logged in to submit answers.");
       setLoading(false);
       return;
     }
-
     try {
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         "https://elevatebackend.onrender.com";
-
       const res = await axios.post(
         `${backendUrl}/feedback`,
-        {
-          question: analysis?.question,
-          user_answer: userAnswer,
-        },
+        { question: analysis?.question, user_answer: userAnswer },
         {
           headers: {
             Authorization: `Bearer ${session.user.id_token}`,
@@ -1017,10 +1013,9 @@ export default function InterviewPreparation() {
           },
         }
       );
-
       setFeedback(res.data);
-    } catch (error) {
-      console.error("Error submitting answer:", error);
+    } catch (err: unknown) {
+      console.error("Error submitting answer:", err);
       setError("Failed to get feedback. Please try again.");
     } finally {
       setLoading(false);
@@ -1050,7 +1045,6 @@ export default function InterviewPreparation() {
       <Modal isOpen={modalOpen} onClose={closeModal} title={modalTitle}>
         <p className="text-gray-700 whitespace-pre-line">{modalContent}</p>
       </Modal>
-
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
@@ -1060,7 +1054,6 @@ export default function InterviewPreparation() {
             Technical Excellence Meets Strategic Communication
           </p>
         </header>
-
         <div className="grid grid-cols-2 gap-4 mb-12">
           <button
             onClick={() => setPrepType("technical")}
@@ -1086,7 +1079,6 @@ export default function InterviewPreparation() {
               </div>
             </div>
           </button>
-
           <button
             onClick={() => setPrepType("behavioral")}
             className={`p-6 rounded-xl transition-all ${
@@ -1112,13 +1104,11 @@ export default function InterviewPreparation() {
             </div>
           </button>
         </div>
-
         {prepType === "technical" ? (
           <TechnicalGuide openModal={openModal} />
         ) : (
           <BehavioralGuide openModal={openModal} />
         )}
-
         <form
           onSubmit={handleQuestionAnalysis}
           className="bg-white rounded-xl border border-gray-200 p-8 mb-8"
@@ -1142,8 +1132,7 @@ export default function InterviewPreparation() {
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <FiLoader className="animate-spin h-5 w-5" />
-                  Analyzing...
+                  <FiLoader className="animate-spin h-5 w-5" /> Analyzing...
                 </div>
               ) : (
                 "Generate Breakdown"
@@ -1151,7 +1140,6 @@ export default function InterviewPreparation() {
             </button>
           </div>
         </form>
-
         {analysis && (
           <div className="space-y-8">
             <div className="bg-white rounded-xl border border-gray-200 p-8">
