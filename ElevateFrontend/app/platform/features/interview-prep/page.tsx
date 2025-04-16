@@ -5,13 +5,10 @@ import axios from "axios";
 import { useSession } from "next-auth/react";
 import {
   FiAlertTriangle,
-  FiEdit3,
   FiLoader,
   FiStar,
   FiCheckCircle,
   FiCpu,
-  FiTrendingUp,
-  FiSettings,
   FiChevronDown,
   FiHelpCircle,
   FiClock,
@@ -20,7 +17,7 @@ import {
   FiMessageSquare,
   FiCode,
 } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 
@@ -328,7 +325,7 @@ const Accordion = ({
 // Technical Components
 // ------------------
 const ComplexityProgress = ({ value }: { value: string }) => {
-  const getWidth = (_complexity: string): number => {
+  const getWidth = (): number => {
     const complexities: { [key: string]: number } = {
       "O(1)": 10,
       "O(log n)": 20,
@@ -345,12 +342,11 @@ const ComplexityProgress = ({ value }: { value: string }) => {
     <div className="mt-2 bg-blue-100 rounded-full h-2">
       <div
         className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-        style={{ width: `${getWidth(value)}%` }}
+        style={{ width: `${getWidth()}%` }}
       ></div>
     </div>
   );
 };
-
 const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
   const nested = analysis.analysis || {};
   const approachSteps = nested.approach || [];
@@ -927,7 +923,7 @@ const BehavioralGuide = ({
 
 export default function InterviewPreparation() {
   const { data: session, status } = useSession();
-  const [error, setError] = useState("");
+  const [, setError] = useState("");
   const [prepType, setPrepType] = useState<"technical" | "behavioral">(
     "technical"
   );
