@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
-export default function SignInPage() {
+function SignInPageContent() {
   const router = useRouter();
-
   const { status } = useSession();
   const searchParams = useSearchParams();
   const callbackUrl =
@@ -44,7 +43,6 @@ export default function SignInPage() {
         animate={{ y: [0, 20, 0] }}
         transition={{ duration: 4, repeat: Infinity, delay: 1 }}
       />
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -64,7 +62,6 @@ export default function SignInPage() {
                 Unlock your career potential with Elevate
               </p>
             </div>
-
             {/* Google Sign-In Button */}
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -90,7 +87,6 @@ export default function SignInPage() {
                 </>
               )}
             </motion.button>
-
             {/* Divider */}
             <div className="relative w-full">
               <div className="absolute inset-0 flex items-center">
@@ -104,7 +100,6 @@ export default function SignInPage() {
             </div>
           </div>
         </div>
-
         {/* Footer */}
         <div className="bg-gray-50/80 rounded-b-2xl p-4 text-center border-t border-gray-100">
           <p className="text-sm text-gray-500">
@@ -120,5 +115,13 @@ export default function SignInPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInPageContent />
+    </Suspense>
   );
 }
