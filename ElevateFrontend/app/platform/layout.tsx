@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { SidebarProvider } from "@/components/SidebarContext";
-import { useSession } from "next-auth/react"; // Or your authentication hook
+import { useSession } from "next-auth/react";
 
 export default function PlatformLayout({
   children,
@@ -11,7 +11,7 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { data: session, status } = useSession(); // Replace with your auth system
+  const { data: session, status } = useSession();
 
   // Show loading state while checking authentication
   if (status === "loading") {

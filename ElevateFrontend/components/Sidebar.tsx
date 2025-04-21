@@ -11,6 +11,8 @@ import {
   FiUser,
   FiArrowLeft,
   FiCheckCircle,
+  FiArrowUpRight,
+  FiUsers,
 } from "react-icons/fi";
 import { useSidebar } from "./SidebarContext";
 
@@ -69,6 +71,19 @@ export default function Sidebar() {
           label="Learning Pathways"
           isOpen={isOpen}
         />
+        <SidebarLink
+          href="/platform/features/skill-gap-analysis"
+          icon={<FiUsers className="w-5 h-5" />}
+          label="Skill Gap Analysis"
+          isOpen={isOpen}
+        />
+        <SidebarLink
+          href="/platform/features/role-transition"
+          icon={<FiArrowUpRight className="w-5 h-5" />}
+          label="Role Transition"
+          isOpen={isOpen}
+        />
+
         <SidebarLink
           href="/platform/profile"
           icon={<FiUser className="w-5 h-5" />}
