@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Request, Header, HTTPException
+from fastapi import FastAPI, Request, Header, HTTPException, status
 from features.project_evaluation import ProjectEvaluator
 from features.learning_paths import LearningPathways
-from features.resume_optimization import ResumeOptimizer
+from features.resume_optimization import ResumeOptimizer 
 from features.interview_preparation import InterviewPreparation
+from features.role_transition import RoleTransition   
 import asyncio
 import pprint
 from database import (
@@ -11,6 +12,7 @@ from database import (
     store_learning_pathway_result,
     store_interview_analysis,
     store_interview_feedback,
+    store_role_transition,
     users_collection 
 )
 from auth import verify_google_token  
@@ -21,8 +23,8 @@ from datetime import datetime, UTC
 import uuid
 from fastapi.responses import JSONResponse
 
-
 app = FastAPI()
+
 
 @app.get("/")
 @app.head("/")
@@ -43,9 +45,10 @@ app.add_middleware(
 
 # Initialize instances of our feature classes
 project_evaluator = ProjectEvaluator()
-resume_optimizer = ResumeOptimizer()
+resume_optimizer = ResumeOptimizer() 
 learning_pathways_instance = LearningPathways()
 interview_preparation_instance = InterviewPreparation()
+role_transition_instance = RoleTransition() 
 
 MAX_CONCURRENT_TASKS = 5
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
@@ -116,60 +119,75 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
             )
             raise HTTPException(status_code=500, detail=str(e))
 
-# Updated Resume Optimization Endpoint
+# Resume Optimization Endpoint
 @app.post("/optimize_resume")
 async def optimize_resume(request: Request, authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authentication token.")
-    token = authorization.split("Bearer ")[-1]
-    user_info = verify_google_token(token)
-    user_id = user_info["sub"]
+    
+    try:
+        # Authentication
+        token = authorization.split("Bearer ")[-1]
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
 
+    # Input validation
     body = await request.json()
     resume_text = body.get("resume_text")
     job_description = body.get("job_description")
     if not resume_text or not job_description:
         raise HTTPException(status_code=400, detail="Both resume_text and job_description are required.")
 
-    # Generate unique ID for this optimization
+    # Create tracking entry
     optimization_id = str(uuid.uuid4())
     timestamp = datetime.now(UTC)
-    
-    # Create initial entry
     initial_data = {
         "optimization_id": optimization_id,
-        "resume_text": resume_text,
-        "job_description": job_description,
         "status": "processing",
         "createdAt": timestamp,
-        "updatedAt": timestamp
+        "updatedAt": timestamp,
+        "resume_snapshot": resume_text[:1000] + "..." if len(resume_text) > 1000 else resume_text,
+        "jd_snapshot": job_description[:500] + "..." if len(job_description) > 500 else job_description
     }
     store_optimization_results(user_id, initial_data)
 
     async with semaphore:
         try:
+            # Run the optimizer
             result = await asyncio.get_event_loop().run_in_executor(
                 None, resume_optimizer.optimize, user_id, resume_text, job_description
             )
 
-            optimized_text = result.get("optimized_resume", "ERROR: No response from Gemini API.")
-            
-            # Update existing entry
+            # Persist the completed result (same fields as `result`)
             users_collection.update_one(
                 {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
-                {"$set": {"features.resumeOptimizer.$.status": "completed",
-                          "features.resumeOptimizer.$.optimized_resume": optimized_text,
-                          "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)}}
+                {"$set": {
+                    "status": "completed",
+                    "updatedAt": datetime.now(UTC),
+                    "initial_assessment": result["initial_assessment"],
+                    "relevance_analysis": result["relevance_analysis"],
+                    "optimized_resume": result["optimized_resume"],
+                    "final_evaluation": result["final_evaluation"],
+                    "career_development": result["career_development"]
+                }}
             )
 
-            return {"optimized_resume": optimized_text, "optimization_id": optimization_id}
+            # Return everything at top level
+            return {
+                "optimization_id": optimization_id,
+                **result
+            }
             
         except Exception as e:
             users_collection.update_one(
                 {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
-                {"$set": {"features.resumeOptimizer.$.status": "failed",
-                          "features.resumeOptimizer.$.error": str(e),
-                          "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)}}
+                {"$set": {
+                    "status": "failed",
+                    "error": str(e),
+                    "updatedAt": datetime.now(UTC)
+                }}
             )
             raise HTTPException(status_code=500, detail=str(e))
 # ----------------
@@ -327,3 +345,67 @@ async def interview_feedback(request: Request, authorization: str = Header(None)
                 }}
             )
             raise HTTPException(status_code=500, detail=str(e))
+
+
+# ----------------
+# Role Transition Guidance Endpoint
+# ----------------
+@app.post("/role_transition")
+async def role_transition(
+    request: Request,
+    authorization: str = Header(None),
+):
+    if not authorization:
+         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google authentication token")
+
+    body = await request.json()
+    current = body.get("currentRole")
+    target = body.get("targetRole")
+    if not current or not target:
+       raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Both currentRole and targetRole are required.")
+
+    plan_id = str(uuid.uuid4())
+    ts = datetime.now(UTC)
+    # initial store
+    store_role_transition(user_id, {
+        "plan_id": plan_id,
+        "currentRole": current,
+        "targetRole": target,
+        "status": "processing",
+        "createdAt": ts,
+        "updatedAt": ts
+    })
+
+    async with semaphore:
+        try:
+            plan = await asyncio.get_event_loop().run_in_executor(
+                None,
+                role_transition_instance.generate_plan, user_id, current, target
+            )
+            # update to completed
+            users_collection.update_one(
+                {"_id": user_id, "features.roleTransition.plan_id": plan_id},
+                {"$set": {
+                    "features.roleTransition.$.status": "completed",
+                    "features.roleTransition.$.plan": plan,
+                    "features.roleTransition.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            return {"plan": plan, "plan_id": plan_id}
+
+        except Exception as e:
+            users_collection.update_one(
+                {"_id": user_id, "features.roleTransition.plan_id": plan_id},
+                {"$set": {
+                    "features.roleTransition.$.status": "failed",
+                    "features.roleTransition.$.error": str(e),
+                    "features.roleTransition.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
