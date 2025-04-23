@@ -61,7 +61,8 @@ export default function SkillBenchmarking() {
     setAnalysis(null);
 
     const backend =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      "https://elevatebackend.onrender.com";
 
     try {
       const response = await fetch(`${backend}/skill_benchmark`, {
