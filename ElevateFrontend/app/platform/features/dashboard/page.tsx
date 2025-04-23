@@ -7,7 +7,6 @@ import {
   FiFileText,
   FiCheckCircle,
   FiZap,
-  FiUsers,
   FiBriefcase,
   FiCode,
   FiLayers,

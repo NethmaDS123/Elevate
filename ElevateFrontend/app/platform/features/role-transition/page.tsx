@@ -2,11 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import {
-  BriefcaseIcon,
-  ChartBarIcon,
-  AcademicCapIcon,
-} from "@heroicons/react/24/outline";
+import { ChartBarIcon, AcademicCapIcon } from "@heroicons/react/24/outline";
 
 interface TransitionPlan {
   overview: string;
@@ -76,16 +72,16 @@ export default function RoleTransitionPage() {
       });
 
       if (!res.ok) {
-        // try to extract error message
         const errData = await res.json().catch(() => null);
         throw new Error(errData?.detail || res.statusText);
       }
 
       const { plan } = await res.json();
       setTransitionPlan(plan);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Fetch error:", err);
-      setError(err.message || "Failed to generate transition plan");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
     } finally {
       setLoading(false);
     }

@@ -2,27 +2,7 @@
 
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
-import {
-  FiAlertTriangle,
-  FiCheckCircle,
-  FiLoader,
-  FiStar,
-  FiTrendingUp,
-  FiAward,
-  FiBook,
-  FiCode,
-  FiBriefcase,
-  FiShield,
-  FiAlertOctagon,
-  FiBookOpen,
-  FiTerminal,
-  FiClock,
-  FiMap,
-  FiChevronRight,
-  FiAnchor,
-  FiAlertCircle,
-  FiCalendar,
-} from "react-icons/fi";
+import { FiLoader, FiStar, FiTrendingUp } from "react-icons/fi";
 
 interface AnalysisData {
   metadata: {
