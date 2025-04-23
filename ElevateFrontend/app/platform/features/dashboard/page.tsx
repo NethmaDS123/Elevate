@@ -4,208 +4,308 @@ import { motion } from "framer-motion";
 import {
   FiAlertCircle,
   FiBook,
-  FiCloud,
-  FiDatabase,
   FiFileText,
-  FiServer,
-  FiSettings,
   FiCheckCircle,
+  FiZap,
+  FiUsers,
+  FiBriefcase,
+  FiCode,
+  FiLayers,
+  FiCalendar,
 } from "react-icons/fi";
+import { RadialProgress } from "@/components/RadialProgress";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const { isOpen } = useSidebar();
 
-  // Sample data - could come from props or API
-  const skillGaps = [
-    { name: "Cloud Architecture", progress: 65 },
-    { name: "Database Management", progress: 45 },
-    { name: "Server Configuration", progress: 30 },
-  ];
-
-  const recommendations = [
-    {
-      icon: FiSettings,
-      title: "Optimize Your Resume",
-      description:
-        "Upload your resume and get tailored recommendations to make it ATS-compatible and role-specific.",
-      action: "Optimize Resume",
+  // Sample data
+  const dashboardData = {
+    resumeHealth: {
+      score: 78,
+      improvements: 3,
+      lastUpdated: "2 days ago",
     },
-    {
-      icon: FiCheckCircle,
-      title: "Complete Learning Paths",
-      description:
-        "Review your progress in learning new skills and complete courses to bridge gaps in knowledge.",
-      action: "View Learning Paths",
+    jobTracker: {
+      applied: 12,
+      interviews: 3,
+      upcoming: [
+        { company: "Tech Corp", date: "2024-03-25", role: "Senior Developer" },
+        {
+          company: "StartUp Inc",
+          date: "2024-03-28",
+          role: "Full Stack Engineer",
+        },
+      ],
     },
-  ];
+    leetcodeTracker: {
+      streak: 15,
+      problemsSolved: 45,
+      recentProblems: [
+        { name: "Two Sum", difficulty: "Easy", date: "2024-03-20" },
+        { name: "Merge Intervals", difficulty: "Medium", date: "2024-03-19" },
+      ],
+    },
+    learningPaths: [
+      { title: "System Design", progress: 65, icon: <FiLayers /> },
+      { title: "Cloud Certification", progress: 80, icon: <FiZap /> },
+    ],
+    quickActions: [
+      {
+        icon: <FiZap />,
+        title: "Project Ideas",
+        color: "text-amber-600",
+        link: "/project-ideas",
+      },
+      {
+        icon: <FiCode />,
+        title: "Leetcode",
+        color: "text-indigo-600",
+        link: "/leetcode-tracker",
+      },
+      {
+        icon: <FiBriefcase />,
+        title: "Job Tracker",
+        color: "text-teal-600",
+        link: "/job-tracker",
+      },
+    ],
+  };
 
   return (
     <motion.div
       animate={{ marginLeft: isOpen ? "240px" : "72px" }}
       transition={{ duration: 0.3 }}
-      className="p-8 min-h-screen bg-gradient-to-br from-gray-50 to-blue-50"
+      className="p-8 min-h-screen bg-gray-50"
     >
-      {/* Header Section */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Welcome back, Nethma!
-          </h1>
-          <p className="text-gray-600">Here&apos;s your current progress</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <FiAlertCircle className="w-6 h-6 text-blue-600" />
-            <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-xs text-white">
-              3
-            </div>
-          </div>
-        </div>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Career Dashboard
+        </h1>
+        <p className="text-gray-500 mt-1">
+          Welcome back! {dashboardData.jobTracker.applied} applications
+          submitted this month
+        </p>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Resume Score Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all"
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        {/* Resume Health Card */}
+        <Link
+          href="/resume-optimizer"
+          className="md:col-span-2 bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100"
         >
-          <h2 className="text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
-            <FiFileText className="text-blue-600" />
-            Resume Score
-          </h2>
-          <div className="relative w-full aspect-square max-w-[160px] mx-auto mb-4">
-            <svg className="transform -rotate-90 w-full h-full">
-              <circle
-                cx="50%"
-                cy="50%"
-                r="45%"
-                className="stroke-current text-gray-200"
-                strokeWidth="8"
-                fill="none"
-              />
-              <circle
-                cx="50%"
-                cy="50%"
-                r="45%"
-                className="stroke-current text-blue-600"
-                strokeWidth="8"
-                fill="none"
-                strokeDasharray="283"
-                strokeDashoffset="283"
-                style={{
-                  strokeDashoffset: 283 * (1 - 0.78),
-                  filter: "drop-shadow(0 4px 12px rgba(79, 156, 249, 0.3))",
-                }}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-bold text-blue-600">78%</span>
-              <span className="text-sm text-gray-500">ATS Compatible</span>
-            </div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium flex items-center gap-2 text-gray-700">
+              <FiFileText className="text-indigo-600 w-5 h-5" />
+              Resume Health
+            </h2>
+            <RadialProgress value={dashboardData.resumeHealth.score} />
           </div>
-          <button className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-xl hover:scale-[1.02] transition-transform font-medium shadow-md">
-            Optimize Resume
-          </button>
-        </motion.div>
-
-        {/* Skill Gap Analysis */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all md:col-span-2"
-        >
-          <h2 className="text-lg font-semibold mb-6 text-gray-800 flex items-center gap-2">
-            <FiAlertCircle className="text-red-500" />
-            Skill Gap Analysis
-          </h2>
-          <div className="space-y-6">
-            {skillGaps.map((skill, index) => (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-gray-700">
-                    {index === 0 && <FiCloud className="w-5 h-5" />}
-                    {index === 1 && <FiDatabase className="w-5 h-5" />}
-                    {index === 2 && <FiServer className="w-5 h-5" />}
-                    <span>{skill.name}</span>
-                  </div>
-                  <span className="text-sm text-red-500 font-medium">
-                    {100 - skill.progress}% missing
-                  </span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${skill.progress}%` }}
-                    transition={{ duration: 1, delay: index * 0.2 }}
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full"
-                  />
+          <div className="grid grid-cols-3 gap-3">
+            <div className="p-3 bg-indigo-50 rounded-lg flex items-center gap-3">
+              <FiCheckCircle className="text-indigo-600 w-5 h-5" />
+              <div>
+                <div className="text-xs text-gray-600">ATS Score</div>
+                <div className="text-lg font-semibold">
+                  {dashboardData.resumeHealth.score}%
                 </div>
               </div>
-            ))}
+            </div>
+            <div className="p-3 bg-rose-50 rounded-lg flex items-center gap-3">
+              <FiAlertCircle className="text-rose-600 w-5 h-5" />
+              <div>
+                <div className="text-xs text-gray-600">Improvements</div>
+                <div className="text-lg font-semibold">
+                  {dashboardData.resumeHealth.improvements}
+                </div>
+              </div>
+            </div>
+            <div className="p-3 bg-gray-100 rounded-lg flex items-center gap-3">
+              <FiCalendar className="text-gray-600 w-5 h-5" />
+              <div>
+                <div className="text-xs text-gray-600">Last Updated</div>
+                <div className="text-lg font-semibold">
+                  {dashboardData.resumeHealth.lastUpdated}
+                </div>
+              </div>
+            </div>
           </div>
-          <button className="mt-6 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl transition-colors font-medium">
-            View All Gaps
-          </button>
-        </motion.div>
+        </Link>
 
-        {/* Recommendations Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all md:col-span-2"
-        >
-          <h2 className="text-lg font-semibold mb-4 text-gray-800">
-            Recommendations
+        {/* Learning Matrix */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-gray-700">
+            <FiBook className="text-teal-600 w-5 h-5" />
+            Learning Paths
           </h2>
           <div className="space-y-4">
-            {recommendations.map((rec, index) => (
-              <div
-                key={index}
-                className="p-4 bg-gray-100 rounded-xl flex items-center gap-4 hover:bg-gray-200 transition-all"
-              >
-                <div className="text-3xl text-gray-700">{<rec.icon />}</div>
-                <div>
-                  <h3 className="font-semibold text-gray-800">{rec.title}</h3>
-                  <p className="text-sm text-gray-600">{rec.description}</p>
+            {dashboardData.learningPaths.map((path, index) => (
+              <Link key={index} href="/learning-pathways" className="block">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500">{path.icon}</span>
+                      <span className="text-sm">{path.title}</span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {path.progress}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${path.progress}%` }}
+                      className="h-full bg-teal-500 rounded-full"
+                    />
+                  </div>
                 </div>
-                <button className="ml-auto bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
-                  {rec.action}
-                </button>
-              </div>
+              </Link>
             ))}
           </div>
-        </motion.div>
+        </div>
 
-        {/* Learning Progress */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-gray-200/50 hover:shadow-2xl transition-all lg:col-span-2"
-        >
-          <h2 className="text-lg font-semibold mb-6 text-gray-800 flex items-center gap-2">
-            <FiBook className="text-green-500" />
-            Learning Progress
+        {/* Job Tracker */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-gray-700">
+            <FiBriefcase className="text-amber-600 w-5 h-5" />
+            Job Tracker
           </h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-xl">
-              <div className="text-2xl font-bold text-blue-600 mb-1">12</div>
-              <div className="text-sm text-gray-600">Completed</div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="p-2 bg-indigo-50 rounded-lg text-center">
+                <div className="text-xl font-semibold">
+                  {dashboardData.jobTracker.applied}
+                </div>
+                <div className="text-xs text-gray-600">Applied</div>
+              </div>
+              <div className="p-2 bg-teal-50 rounded-lg text-center">
+                <div className="text-xl font-semibold">
+                  {dashboardData.jobTracker.interviews}
+                </div>
+                <div className="text-xs text-gray-600">Interviews</div>
+              </div>
+              <div className="p-2 bg-amber-50 rounded-lg text-center">
+                <div className="text-xl font-semibold">
+                  {dashboardData.jobTracker.upcoming.length}
+                </div>
+                <div className="text-xs text-gray-600">Upcoming</div>
+              </div>
             </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-xl">
-              <div className="text-2xl font-bold text-yellow-600 mb-1">3</div>
-              <div className="text-sm text-gray-600">In Progress</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-xl">
-              <div className="text-2xl font-bold text-purple-600 mb-1">5</div>
-              <div className="text-sm text-gray-600">New Paths</div>
+            <div className="space-y-3">
+              {dashboardData.jobTracker.upcoming.map((job, index) => (
+                <div
+                  key={index}
+                  className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <div className="text-sm font-medium">{job.company}</div>
+                  <div className="text-xs text-gray-600">{job.role}</div>
+                  <div className="text-xs text-indigo-600 mt-1">
+                    {new Date(job.date).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </motion.div>
+        </div>
+
+        {/* Leetcode Tracker */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-gray-700">
+            <FiCode className="text-purple-600 w-5 h-5" />
+            Leetcode Progress
+          </h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="p-2 bg-purple-50 rounded-lg text-center">
+                <div className="text-xl font-semibold">
+                  {dashboardData.leetcodeTracker.streak}
+                </div>
+                <div className="text-xs text-gray-600">Day Streak</div>
+              </div>
+              <div className="p-2 bg-green-50 rounded-lg text-center">
+                <div className="text-xl font-semibold">
+                  {dashboardData.leetcodeTracker.problemsSolved}
+                </div>
+                <div className="text-xs text-gray-600">Solved</div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {dashboardData.leetcodeTracker.recentProblems.map(
+                (problem, index) => (
+                  <div
+                    key={index}
+                    className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="text-sm font-medium">{problem.name}</div>
+                    <div className="flex justify-between text-xs mt-1">
+                      <span
+                        className={`font-medium ${
+                          problem.difficulty === "Easy"
+                            ? "text-green-600"
+                            : problem.difficulty === "Medium"
+                            ? "text-amber-600"
+                            : "text-rose-600"
+                        }`}
+                      >
+                        {problem.difficulty}
+                      </span>
+                      <span className="text-gray-600">
+                        {new Date(problem.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Access */}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2 text-gray-700">
+            <FiZap className="text-rose-600 w-5 h-5" />
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            {dashboardData.quickActions.map((action, index) => (
+              <Link
+                key={index}
+                href={action.link}
+                className={`p-3 rounded-lg flex flex-col items-center justify-center aspect-square hover:bg-gray-50 transition-colors border ${action.color} border-gray-200`}
+              >
+                <span className={`text-2xl mb-2 ${action.color}`}>
+                  {action.icon}
+                </span>
+                <span className="text-sm text-gray-700">{action.title}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Interview Prep */}
+        <div className="md:col-span-2 bg-indigo-600 text-white rounded-xl p-5 shadow-sm">
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-2">
+            <FiCalendar className="w-5 h-5" />
+            Interview Preparation
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-white/10 rounded-lg backdrop-blur-sm">
+              <div className="text-xs mb-1">Upcoming Interviews</div>
+              <div className="text-xl font-semibold">
+                {dashboardData.jobTracker.upcoming.length}
+              </div>
+            </div>
+            <Link
+              href="/interview-prep"
+              className="p-3 bg-white/20 rounded-lg backdrop-blur-sm hover:bg-white/30 flex flex-col items-center justify-center transition-colors"
+            >
+              <FiCheckCircle className="w-6 h-6 mb-2" />
+              <span className="text-sm">Practice Now</span>
+            </Link>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

@@ -1,424 +1,264 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
+import { useSession } from "next-auth/react";
 import {
-  FiChevronDown,
-  FiExternalLink,
-  FiBriefcase,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiLoader,
+  FiStar,
+  FiTrendingUp,
+  FiAward,
+  FiBook,
   FiCode,
-  FiGithub,
+  FiBriefcase,
+  FiShield,
+  FiAlertOctagon,
+  FiBookOpen,
+  FiTerminal,
   FiClock,
+  FiMap,
+  FiChevronRight,
+  FiAnchor,
+  FiAlertCircle,
+  FiCalendar,
 } from "react-icons/fi";
 
-// Type definitions
-interface SkillMetric {
-  name: string;
-  current: number;
-  target: number;
-  priority: "high" | "medium" | "low";
-}
-
-interface GapItem {
-  category: string;
-  skill: string;
-  gapLevel: "critical" | "significant" | "moderate";
-  recommendedActions: string[];
-  resources: {
-    type: "course" | "project" | "article";
-    title: string;
-    url: string;
+interface AnalysisData {
+  metadata: {
+    parse_quality: {
+      skills_extracted: number;
+      projects_analyzed: number;
+      leadership_roles: number;
+      parse_attempts: number;
+    };
+    benchmark_sources: string[];
+  };
+  detailed_gap_analysis: {
+    strengths: {
+      skill: string;
+      reasoning: string;
+    }[];
+    areas_for_improvement: {
+      category: string;
+      current_situation: string;
+      ideal_situation: string;
+      urgency: string;
+      reasoning: string;
+    }[];
+  };
+  strategic_roadmap: {
+    short_term_goals: RoadmapItem[];
+    medium_term_goals: RoadmapItem[];
+    long_term_goals: RoadmapItem[];
+  };
+  resume_improvements: {
+    section: string;
+    original: string;
+    improved: string;
   }[];
 }
 
-interface ExperienceRequirement {
-  type: "professional" | "project" | "open-source";
-  description: string;
-  duration?: string;
-  exampleProjects?: string[];
+interface RoadmapItem {
+  timeframe: string;
+  goal: string;
+  actions: string[];
+  reasoning: string;
 }
-
-interface RoadmapPhase {
-  phase: number;
-  title: string;
-  timeline: string;
-  skillsToAcquire: string[];
-  projects: string[];
-  milestones: string[];
-}
-
 export default function SkillBenchmarking() {
-  const [selectedCategory, setSelectedCategory] = useState("technical");
-  const [expandedGap, setExpandedGap] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const [roleLevel, setRoleLevel] = useState("internship");
+  const [domain, setDomain] = useState("");
+  const [resumeText, setResumeText] = useState("");
+  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  // Mock data
-  const skillMetrics: SkillMetric[] = [
-    { name: "System Design", current: 3, target: 8, priority: "high" },
-    { name: "Algorithms", current: 5, target: 9, priority: "high" },
-    { name: "Cloud Architecture", current: 2, target: 7, priority: "medium" },
-    { name: "CI/CD Pipelines", current: 4, target: 6, priority: "low" },
-  ];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setAnalysis(null);
 
-  const gapAnalysis: GapItem[] = [
-    {
-      category: "technical",
-      skill: "Distributed Systems",
-      gapLevel: "critical",
-      recommendedActions: [
-        "Study consistent hashing patterns",
-        "Implement a distributed cache system",
-        "Learn about consensus algorithms (Raft, Paxos)",
-      ],
-      resources: [
-        { type: "course", title: "MIT Distributed Systems Course", url: "#" },
-        { type: "project", title: "Build a Key-Value Store", url: "#" },
-      ],
-    },
-  ];
+    const backend =
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
-  const experienceRequirements: ExperienceRequirement[] = [
-    {
-      type: "project",
-      description: "End-to-end system design implementation",
-      duration: "2-3 months",
-      exampleProjects: [
-        "Video streaming platform architecture",
-        "Distributed task scheduler",
-      ],
-    },
-  ];
+    try {
+      const response = await fetch(`${backend}/skill_benchmark`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session?.user.id_token}`,
+        },
+        body: JSON.stringify({
+          resume_text: resumeText,
+          target_role_level: roleLevel,
+          domain,
+        }),
+      });
 
-  const learningRoadmap: RoadmapPhase[] = [
-    {
-      phase: 1,
-      title: "Core Fundamentals",
-      timeline: "Month 1-2",
-      skillsToAcquire: [
-        "Advanced Data Structures",
-        "Complex System Design Patterns",
-      ],
-      projects: ["Design YouTube API", "Implement a search engine indexer"],
-      milestones: [
-        "Complete 10 system design problems",
-        "Master 20+ pattern recognition",
-      ],
-    },
-  ];
+      if (!response.ok)
+        throw new Error(`Analysis failed: ${response.statusText}`);
+
+      const data: AnalysisData = await response.json();
+      setAnalysis(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Analysis failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (status === "loading")
+    return (
+      <div className="flex justify-center py-20">
+        <FiLoader className="animate-spin text-blue-600" size={24} />
+      </div>
+    );
+  if (!session)
+    return <div className="py-20 text-center">Please log in to continue.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            Skill Benchmarking & Gap Analysis
-          </h1>
-          <p className="text-xl text-gray-600">
-            Compare your current skills with target requirements and get
-            personalized recommendations
-          </p>
-        </div>
+    <div className="container mx-auto p-6 space-y-8 max-w-5xl">
+      <h1 className="text-3xl font-bold text-center flex items-center justify-center gap-2">
+        <FiTrendingUp className="text-blue-600" /> Skill Benchmark Analysis
+      </h1>
 
-        {/* Comparison Dashboard */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Current Skill Profile */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              Your Current Profile
-              <span className="text-blue-600 ml-2 text-lg">
-                (L3 Software Engineer)
-              </span>
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md"
+      >
+        <div className="grid md:grid-cols-2 gap-4">
+          <select
+            className="p-3 rounded border"
+            value={roleLevel}
+            onChange={(e) => setRoleLevel(e.target.value)}
+            disabled={loading}
+          >
+            <option value="internship">Internship</option>
+            <option value="junior">Junior Engineer</option>
+            <option value="mid">Mid-level Engineer</option>
+            <option value="senior">Senior Engineer</option>
+            <option value="staff">Staff Engineer</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Domain (e.g., Software Engineering)"
+            className="p-3 rounded border"
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            disabled={loading}
+            required
+          />
+        </div>
+        <textarea
+          placeholder="Paste your resume content"
+          className="w-full p-3 rounded border"
+          rows={6}
+          value={resumeText}
+          onChange={(e) => setResumeText(e.target.value)}
+          disabled={loading}
+          required
+        />
+        <button
+          className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded flex items-center justify-center gap-2 w-full"
+          disabled={loading}
+        >
+          {loading ? <FiLoader className="animate-spin" /> : <FiStar />}{" "}
+          {loading ? "Analyzing..." : "Run Elite Analysis"}
+        </button>
+        {error && (
+          <div className="bg-red-100 text-red-600 p-2 rounded">{error}</div>
+        )}
+      </form>
+
+      {analysis && (
+        <>
+          <section>
+            <h2 className="font-bold text-2xl">
+              🚩 Detailed Gap Analysis & Comparison
             </h2>
-            <div className="space-y-4">
-              {skillMetrics.map((metric) => (
-                <div key={metric.name} className="bg-gray-50 p-4 rounded-xl">
-                  <div className="flex justify-between mb-2">
-                    <span className="font-medium">{metric.name}</span>
-                    <span
-                      className={`px-2 py-1 rounded-full text-sm ${
-                        metric.priority === "high"
-                          ? "bg-red-100 text-red-800"
-                          : metric.priority === "medium"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-green-100 text-green-800"
-                      }`}
-                    >
-                      {metric.priority} priority
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 bg-gray-200 rounded-full h-3">
-                      <div
-                        className="bg-gradient-to-r from-blue-400 to-purple-600 h-3 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${(metric.current / metric.target) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-gray-600 text-sm">
-                      {metric.current}/{metric.target}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Target Profile */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-200">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">
-              Target Profile
-              <span className="text-purple-600 ml-2 text-lg">
-                (L5 Senior Engineer)
-              </span>
-            </h2>
-            <div className="space-y-4">
-              <div className="bg-purple-50 p-4 rounded-xl">
-                <h3 className="font-semibold mb-3 text-purple-800">
-                  Key Requirements
-                </h3>
-                <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                  <li>8+ years of distributed systems experience</li>
-                  <li>Mentorship and technical leadership</li>
-                  <li>Cross-functional project ownership</li>
-                </ul>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-xl">
-                <h3 className="font-semibold mb-3 text-purple-800">
-                  Expected Impact
-                </h3>
-                <ul className="list-disc pl-6 space-y-2 text-gray-700">
-                  <li>Architectural decision making</li>
-                  <li>Mentoring junior engineers</li>
-                  <li>Driving technical initiatives</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Gap Analysis Section */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Skill Gap Analysis
-          </h2>
-          <div className="grid gap-4 md:grid-cols-3 mb-4">
-            {["technical", "experience", "leadership"].map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`p-3 rounded-xl text-center capitalize ${
-                  selectedCategory === category
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {category} Skills
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-4">
-            {gapAnalysis
-              .filter((item) => item.category === selectedCategory)
-              .map((gap) => (
-                <div
-                  key={gap.skill}
-                  className="border-l-4 border-red-500 bg-red-50 p-4 rounded-lg"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-red-800">
-                        {gap.skill}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-sm">
-                          {gap.gapLevel} gap
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setExpandedGap(
-                          expandedGap === gap.skill ? null : gap.skill
-                        )
-                      }
-                      className="p-2 hover:bg-red-100 rounded-full"
-                    >
-                      <FiChevronDown
-                        className={`transform transition-transform ${
-                          expandedGap === gap.skill ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {expandedGap === gap.skill && (
-                    <div className="mt-4 space-y-4">
-                      <div className="bg-white p-4 rounded-lg border border-gray-200">
-                        <h4 className="font-medium mb-2 text-gray-800">
-                          Recommended Actions
-                        </h4>
-                        <ul className="list-disc pl-6 space-y-2">
-                          {gap.recommendedActions.map((action, i) => (
-                            <li key={i} className="text-gray-700">
-                              {action}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="bg-white p-4 rounded-lg border border-gray-200">
-                        <h4 className="font-medium mb-2 text-gray-800">
-                          Learning Resources
-                        </h4>
-                        <div className="grid gap-3">
-                          {gap.resources.map((resource, i) => (
-                            <a
-                              key={i}
-                              href={resource.url}
-                              className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <span className="text-gray-700">
-                                {resource.title}
-                              </span>
-                              <FiExternalLink className="text-gray-400" />
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* Experience Roadmap */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Experience Roadmap
-          </h2>
-          <div className="space-y-8">
-            {learningRoadmap.map((phase) => (
-              <div
-                key={phase.phase}
-                className="border-l-4 border-blue-500 pl-6 relative"
-              >
-                <div className="absolute w-8 h-8 bg-blue-500 rounded-full -left-4 top-0 flex items-center justify-center text-white">
-                  {phase.phase}
-                </div>
-                <h3 className="text-xl font-semibold mb-4">
-                  {phase.title}
-                  <span className="ml-2 text-gray-500 text-sm font-normal">
-                    {phase.timeline}
-                  </span>
-                </h3>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="bg-blue-50 p-4 rounded-xl">
-                    <h4 className="font-medium mb-2 text-blue-800">
-                      Skills to Acquire
-                    </h4>
-                    <ul className="list-disc pl-6 space-y-2">
-                      {phase.skillsToAcquire.map((skill, i) => (
-                        <li key={i} className="text-gray-700">
-                          {skill}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-purple-50 p-4 rounded-xl">
-                    <h4 className="font-medium mb-2 text-purple-800">
-                      Recommended Projects
-                    </h4>
-                    <ul className="list-disc pl-6 space-y-2">
-                      {phase.projects.map((project, i) => (
-                        <li key={i} className="text-gray-700">
-                          {project}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-green-50 p-4 rounded-xl">
-                    <h4 className="font-medium mb-2 text-green-800">
-                      Key Milestones
-                    </h4>
-                    <ul className="list-disc pl-6 space-y-2">
-                      {phase.milestones.map((milestone, i) => (
-                        <li key={i} className="text-gray-700">
-                          {milestone}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+            <h3 className="mt-4 font-semibold text-lg">
+              ✅ Strengths You Already Possess:
+            </h3>
+            {analysis.detailed_gap_analysis.strengths.map((s, idx) => (
+              <div key={idx} className="bg-green-50 p-4 rounded shadow mb-3">
+                <strong>{s.skill}</strong>
+                <p>{s.reasoning}</p>
               </div>
             ))}
-          </div>
-        </div>
 
-        {/* Experience Requirements */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            Experience Requirements
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {experienceRequirements.map((exp, i) => (
-              <div key={i} className="bg-gray-50 p-6 rounded-xl">
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className={`p-2 rounded-lg ${
-                      exp.type === "professional"
-                        ? "bg-blue-100"
-                        : exp.type === "project"
-                        ? "bg-purple-100"
-                        : "bg-green-100"
-                    }`}
-                  >
-                    {exp.type === "professional" && (
-                      <FiBriefcase className="w-6 h-6 text-blue-600" />
-                    )}
-                    {exp.type === "project" && (
-                      <FiCode className="w-6 h-6 text-purple-600" />
-                    )}
-                    {exp.type === "open-source" && (
-                      <FiGithub className="w-6 h-6 text-green-600" />
-                    )}
-                  </div>
-                  <h3 className="text-lg font-semibold capitalize">
-                    {exp.type} Experience
+            <h3 className="mt-4 font-semibold text-lg">
+              ❗ Areas for Improvement:
+            </h3>
+            {analysis.detailed_gap_analysis.areas_for_improvement.map(
+              (gap, idx) => (
+                <div key={idx} className="bg-red-50 p-4 rounded shadow mb-3">
+                  <strong>{gap.category}</strong> (Urgency: {gap.urgency})
+                  <p>
+                    <strong>Current:</strong> {gap.current_situation}
+                  </p>
+                  <p>
+                    <strong>Ideal:</strong> {gap.ideal_situation}
+                  </p>
+                  <p>{gap.reasoning}</p>
+                </div>
+              )
+            )}
+          </section>
+
+          <section className="mt-8">
+            <h2 className="font-bold text-2xl">🚀 Strategic Career Roadmap</h2>
+            {["short_term_goals", "medium_term_goals", "long_term_goals"].map(
+              (phase) => (
+                <div key={phase} className="mt-4">
+                  <h3 className="font-semibold capitalize">
+                    {phase.replace(/_/g, " ")}
                   </h3>
+                  {analysis.strategic_roadmap[
+                    phase as keyof typeof analysis.strategic_roadmap
+                  ].map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-blue-50 p-4 rounded shadow mb-3"
+                    >
+                      <strong>{item.goal}</strong> ({item.timeframe})
+                      <ul className="list-disc ml-4">
+                        {item.actions.map((act, aIdx) => (
+                          <li key={aIdx}>{act}</li>
+                        ))}
+                      </ul>
+                      <p>{item.reasoning}</p>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-gray-700 mb-4">{exp.description}</p>
-                {exp.duration && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
-                    <FiClock />
-                    <span>Recommended Duration: {exp.duration}</span>
-                  </div>
-                )}
-                {exp.exampleProjects && (
-                  <div className="bg-white p-4 rounded-lg border border-gray-200">
-                    <h4 className="font-medium mb-2 text-gray-800">
-                      Example Projects
-                    </h4>
-                    <ul className="list-disc pl-6 space-y-2">
-                      {exp.exampleProjects.map((project, i) => (
-                        <li key={i} className="text-gray-700">
-                          {project}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+              )
+            )}
+          </section>
+
+          <section className="mt-8">
+            <h2 className="font-bold text-2xl">
+              🎯 Resume Improvement Examples
+            </h2>
+            {analysis.resume_improvements.map((imp, idx) => (
+              <div key={idx} className="bg-gray-50 p-4 rounded shadow mb-3">
+                <strong>{imp.section}</strong>
+                <p>
+                  <em>Original:</em> {imp.original}
+                </p>
+                <p>
+                  <em>Improved:</em> {imp.improved}
+                </p>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
+          </section>
+
+          <section className="mt-8 text-sm text-gray-600">
+            <strong>Benchmark Sources:</strong>{" "}
+            {analysis.metadata.benchmark_sources.join(", ")}
+          </section>
+        </>
+      )}
     </div>
   );
 }
