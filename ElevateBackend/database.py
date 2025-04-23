@@ -101,3 +101,10 @@ def store_role_transition(user_id: str, data: dict):
 
 def fetch_role_transition(user_id: str):
     return fetch_latest_feature(user_id, "roleTransition")
+
+# Skill Benchmarking (Feature Name: "skillBenchmark")
+def store_skill_benchmark(user_id: str, data: dict):
+    store_user_feature(user_id, "skillBenchmark", data)
+
+def fetch_skill_benchmark(user_id: str):
+    return fetch_latest_feature(user_id, "skillBenchmark")

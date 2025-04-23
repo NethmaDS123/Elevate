@@ -1,11 +1,22 @@
+# main.py
+import os
+import uuid
+import asyncio
+import logging
+from datetime import datetime, UTC
+
 from fastapi import FastAPI, Request, Header, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+import json 
+
 from features.project_evaluation import ProjectEvaluator
 from features.learning_paths import LearningPathways
 from features.resume_optimization import ResumeOptimizer 
 from features.interview_preparation import InterviewPreparation
-from features.role_transition import RoleTransition   
-import asyncio
-import pprint
+from features.role_transition import RoleTransition 
+from features.skill_benchmark import SkillBenchmark
 from database import (
     store_evaluation_result,
     store_optimization_results,
@@ -13,27 +24,24 @@ from database import (
     store_interview_analysis,
     store_interview_feedback,
     store_role_transition,
+    store_skill_benchmark,
     users_collection 
 )
 from auth import verify_google_token  
-from fastapi.middleware.cors import CORSMiddleware
-import os
-import uvicorn
-from datetime import datetime, UTC
-import uuid
-from fastapi.responses import JSONResponse
 
+# -------------------------
+# Logging Configuration
+# -------------------------
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+logger = logging.getLogger("main")
+
+# -------------------------
+# FastAPI App
+# -------------------------
 app = FastAPI()
-
-
-@app.get("/")
-@app.head("/")
-def read_root():
-    return {"message": "Hello, World!"}
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,12 +51,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize instances of our feature classes
-project_evaluator = ProjectEvaluator()
-resume_optimizer = ResumeOptimizer() 
-learning_pathways_instance = LearningPathways()
-interview_preparation_instance = InterviewPreparation()
-role_transition_instance = RoleTransition() 
+@app.get("/")
+@app.head("/")
+def read_root():
+    return {"message": "Hello, World!"}
+
+# -------------------------
+# Feature Instances
+# -------------------------
+project_evaluator         = ProjectEvaluator()
+resume_optimizer          = ResumeOptimizer()
+learning_pathways_instance= LearningPathways()
+interview_preparation_instance   = InterviewPreparation()
+role_transition_instance  = RoleTransition()
+skill_benchmark_instance = SkillBenchmark()
 
 MAX_CONCURRENT_TASKS = 5
 semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
@@ -56,7 +72,7 @@ semaphore = asyncio.Semaphore(MAX_CONCURRENT_TASKS)
 # ----------------
 # Project Evaluation Endpoint
 # ----------------
-# main.py (Updated Project Evaluation Endpoint)
+
 @app.post("/evaluate_project")
 async def evaluate_project(request: Request, authorization: str = Header(None)):
     if not authorization:
@@ -119,9 +135,12 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
             )
             raise HTTPException(status_code=500, detail=str(e))
 
+# ----------------
 # Resume Optimization Endpoint
+# ----------------
 @app.post("/optimize_resume")
 async def optimize_resume(request: Request, authorization: str = Header(None)):
+
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authentication token.")
     
@@ -190,6 +209,7 @@ async def optimize_resume(request: Request, authorization: str = Header(None)):
                 }}
             )
             raise HTTPException(status_code=500, detail=str(e))
+
 # ----------------
 # Learning Pathways Endpoint
 # ----------------
@@ -197,26 +217,56 @@ async def optimize_resume(request: Request, authorization: str = Header(None)):
 async def get_learning_pathways(request: Request, authorization: str = Header(None)):
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authentication token.")
-    
     token = authorization.split("Bearer ")[-1]
     try:
         user_info = verify_google_token(token)
         user_id = user_info["sub"]
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
 
     body = await request.json()
     topic = body.get("topic")
     if not topic:
         raise HTTPException(status_code=400, detail="Topic is required.")
 
+    # ← NEW: create initial "processing" entry
+    pathway_id = str(uuid.uuid4())
+    now = datetime.now(UTC)
+    store_learning_pathway_result(user_id, {
+        "pathway_id": pathway_id,
+        "topic": topic,
+        "status": "processing",
+        "createdAt": now,
+        "updatedAt": now
+    })
+
     async with semaphore:
         try:
             pathway = await asyncio.get_event_loop().run_in_executor(
-                None, learning_pathways_instance.generate_pathway, user_id, topic
+                None, LearningPathways().generate_pathway, user_id, topic
             )
-            return pathway
+
+            # update to completed
+            users_collection.update_one(
+                {"_id": user_id, "features.learningPathways.pathway_id": pathway_id},
+                {"$set": {
+                    "features.learningPathways.$.status": "completed",
+                    "features.learningPathways.$.result": pathway,
+                    "features.learningPathways.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+
+            return {"pathway_id": pathway_id, **pathway}
+
         except Exception as e:
+            users_collection.update_one(
+                {"_id": user_id, "features.learningPathways.pathway_id": pathway_id},
+                {"$set": {
+                    "features.learningPathways.$.status": "failed",
+                    "features.learningPathways.$.error": str(e),
+                    "features.learningPathways.$.updatedAt": datetime.now(UTC)
+                }}
+            )
             raise HTTPException(status_code=500, detail=str(e))
 # ----------------
 # Interview Question Analysis Endpoint
@@ -409,3 +459,78 @@ async def role_transition(
                 }}
             )
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+# ----------------
+# Skill Benchmark & Gap Analysis Endpoint
+# ----------------
+
+@app.post("/skill_benchmark")
+async def skill_benchmark(request: Request, authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        user = verify_google_token(token)
+        user_id = user["sub"]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    body = await request.json()
+    resume_text       = body.get("resume_text")
+    domain            = body.get("domain")
+    target_role_level = body.get("target_role_level")
+    if not resume_text or not domain or not target_role_level:
+        raise HTTPException(
+            status_code=400,
+            detail="`resume_text`, `domain`, and `target_role_level` are all required."
+        )
+
+    entry_id  = str(uuid.uuid4())
+    timestamp = datetime.now(UTC)
+
+    store_skill_benchmark(user_id, {
+        "entry_id": entry_id,
+        "status": "processing",
+        "createdAt": timestamp,
+        "updatedAt": timestamp,
+        "resume_snapshot": resume_text[:1000] + "..." if len(resume_text) > 1000 else resume_text,
+        "domain": domain,
+        "target_role_level": target_role_level
+    })
+
+    async with semaphore:
+        try:
+            loop = asyncio.get_event_loop()
+
+            # run the benchmark and capture its output
+            skill_data = await loop.run_in_executor(
+                None,
+                skill_benchmark_instance.run,
+                user_id, entry_id, resume_text, domain, target_role_level
+            )
+
+            # return the ID plus all of the Gemini-generated fields
+            return {
+                "skill_benchmark_id": entry_id,
+                **skill_data
+            }
+
+        except Exception as e:
+            logger.error("skill_benchmark failed", exc_info=e)
+            users_collection.update_one(
+                {"_id": user_id, "features.skillBenchmark.entry_id": entry_id},
+                {"$set": {
+                    "features.skillBenchmark.$.status":    "failed",
+                    "features.skillBenchmark.$.error":     str(e),
+                    "features.skillBenchmark.$.updatedAt": datetime.now(UTC)
+                }}
+            )
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)

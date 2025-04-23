@@ -1,0 +1,163 @@
+import re
+import google.generativeai as genai
+from dotenv import load_dotenv
+import os
+import json
+import logging
+from datetime import datetime, UTC
+from database import store_user_feature
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Load environment and configure Gemini
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("GEMINI_API_KEY not found in environment variables!")
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Prompt template with escaped braces for literal JSON
+SKILL_BENCHMARK_PROMPT = """
+You are an expert career architect and mentor. Given the following resume and targeting the domain "{domain}" for a "{target_role_level}" role, perform a comprehensive benchmarking analysis against ideal elite candidates (e.g., MIT/Stanford students, FAANG interns/employees, ICPC winners, impactful open-source contributors).
+
+Your analysis must explicitly include:
+
+1. **Detailed Gap Analysis & Comparison**:
+   - Clearly highlight strengths with detailed reasoning.
+   - Clearly describe critical areas for improvement with explanations comparing the candidate to ideal profiles from top-tier institutions and companies.
+
+2. **Step-by-Step Strategic Career Roadmap**:
+   Provide detailed short-term (0-6 months), medium-term (6-18 months), and long-term (18+ months) action plans.
+   - Include concrete goals.
+   - Recommend specific projects, resources, hackathons, competitive programming platforms, internships, certifications, and activities to reach elite-level standards.
+   - Clearly state why each recommended action is important and how it directly closes identified gaps.
+
+3. **Immediate Resume Enhancements**:
+   Provide concrete examples of how to rewrite or enhance key sections (e.g., Projects, Work Experience) of the provided resume to highlight quantifiable impact aligned with elite standards.
+
+Structure your JSON output exactly as follows:
+
+{{
+  "metadata": {{
+    "parse_quality": {{
+      "skills_extracted": <int>,
+      "projects_analyzed": <int>,
+      "leadership_roles": <int>,
+      "parse_attempts": 1
+    }},
+    "benchmark_sources": ["MIT CS curriculum", "Google Level {target_role_level} engineer standards", "Stanford AI Lab standards"]
+  }},
+  "detailed_gap_analysis": {{
+    "strengths": [
+      {{
+        "skill": "<skill>",
+        "reasoning": "<detailed reasoning why it's a strength>"
+      }}
+    ],
+    "areas_for_improvement": [
+      {{
+        "category": "<e.g., Education, Project Scale, Internship Prestige>",
+        "current_situation": "<your current status>",
+        "ideal_situation": "<elite candidate standard>",
+        "urgency": "High/Medium/Low",
+        "reasoning": "<detailed explanation of gap and why it matters>"
+      }}
+    ]
+  }},
+  "strategic_roadmap": {{
+    "short_term_goals": [
+      {{
+        "timeframe": "0-6 months",
+        "goal": "<specific goal>",
+        "actions": ["<action 1>", "<action 2>"],
+        "reasoning": "<why these actions help achieve elite standards>"
+      }}
+    ],
+    "medium_term_goals": [
+      {{
+        "timeframe": "6-18 months",
+        "goal": "<specific goal>",
+        "actions": ["<action 1>", "<action 2>"],
+        "reasoning": "<importance of these steps in career progression>"
+      }}
+    ],
+    "long_term_goals": [
+      {{
+        "timeframe": "18+ months",
+        "goal": "<specific goal>",
+        "actions": ["<action 1>", "<action 2>"],
+        "reasoning": "<how these actions establish industry leadership>"
+      }}
+    ]
+  }},
+  "resume_improvements": [
+    {{
+      "section": "Projects",
+      "original": "<original resume text>",
+      "improved": "<specific, quantifiable rewritten example>"
+    }}
+  ]
+}}
+
+Resume Text:
+\"\"\"{resume_text}\"\"\"
+
+Domain: {domain}
+Target Level: {target_role_level}
+
+Return only valid JSON, ensuring highly detailed explanations and actionable insights similar to top-tier career coaching standards.
+"""
+
+class SkillBenchmark:
+    def __init__(self, model_name: str = "gemini-1.5-flash"):
+        self.model_name = model_name
+
+    def _clean_response(self, text: str) -> str:
+        # Strip markdown fences if present
+        text = re.sub(r"```(?:json)?\s*", "", text)
+        return re.sub(r"```$", "", text).strip()
+
+    def _run_step(self, prompt: str) -> dict:
+        logger.info(f"Sending prompt to Gemini (size: {len(prompt)} chars)")
+        model = genai.GenerativeModel(self.model_name)
+        resp = model.generate_content(prompt)
+        cleaned = self._clean_response(resp.text)
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON parsing failed: {e}\nResponse was:\n{cleaned}")
+            raise RuntimeError(f"Gemini JSON parse error: {e}")
+
+    def run(self, user_id: str, entry_id: str, resume_text: str, domain: str, target_role_level: str) -> dict:
+        if len(resume_text) < 100:
+            raise ValueError("Resume text too short for meaningful analysis.")
+
+        # Construct final prompt with dynamic fields
+        prompt = SKILL_BENCHMARK_PROMPT.format(
+            domain=domain,
+            target_role_level=target_role_level,
+            resume_text=resume_text
+        )
+
+        # Call Gemini and parse result
+        result = self._run_step(prompt)
+
+        # Persist the feature result (include feature name as second arg)
+        store_user_feature(
+            user_id,
+            "skill_benchmark",
+            {
+                "entry_id": entry_id,
+                "input": {
+                    "resume_text": resume_text,
+                    "domain": domain,
+                    "target_role_level": target_role_level
+                },
+                "output": result,
+                "timestamp": datetime.now(UTC).isoformat()
+            }
+        )
+
+        return result
