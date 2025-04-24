@@ -150,75 +150,72 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
 # ----------------
 @app.post("/optimize_resume")
 async def optimize_resume(request: Request, authorization: str = Header(None)):
-
     if not authorization:
         raise HTTPException(status_code=401, detail="Missing authentication token.")
-    
+    token = authorization.split("Bearer ")[-1]
     try:
-        # Authentication
-        token = authorization.split("Bearer ")[-1]
         user_info = verify_google_token(token)
         user_id = user_info["sub"]
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid authentication token") from e
+    except Exception:
+        logger.warning("Invalid auth token on optimize_resume")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
 
-    # Input validation
     body = await request.json()
     resume_text = body.get("resume_text")
     job_description = body.get("job_description")
     if not resume_text or not job_description:
-        raise HTTPException(status_code=400, detail="Both resume_text and job_description are required.")
+        raise HTTPException(
+            status_code=400,
+            detail="Both `resume_text` and `job_description` are required."
+        )
 
-    # Create tracking entry
     optimization_id = str(uuid.uuid4())
-    timestamp = datetime.now(UTC)
-    initial_data = {
+    now = datetime.now(UTC)
+    store_optimization_results(user_id, {
         "optimization_id": optimization_id,
         "status": "processing",
-        "createdAt": timestamp,
-        "updatedAt": timestamp,
+        "createdAt": now,
+        "updatedAt": now,
         "resume_snapshot": resume_text[:1000] + "..." if len(resume_text) > 1000 else resume_text,
         "jd_snapshot": job_description[:500] + "..." if len(job_description) > 500 else job_description
-    }
-    store_optimization_results(user_id, initial_data)
+    })
 
     async with semaphore:
         try:
-            # Run the optimizer
-            result = await asyncio.get_event_loop().run_in_executor(
-                None, resume_optimizer.optimize, user_id, resume_text, job_description
+            logger.info(f"[{user_id}] Starting resume optimization (id={optimization_id})")
+            result: dict = await asyncio.get_event_loop().run_in_executor(
+                None,
+                resume_optimizer.optimize,
+                user_id,
+                resume_text,
+                job_description
             )
+            logger.info(f"[{user_id}] Completed resume optimization (id={optimization_id}) ats_score={result.get('ats_score')}")
 
-            # Persist the completed result (same fields as `result`)
             users_collection.update_one(
                 {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
                 {"$set": {
-                    "status": "completed",
-                    "updatedAt": datetime.now(UTC),
-                    "initial_assessment": result["initial_assessment"],
-                    "relevance_analysis": result["relevance_analysis"],
-                    "optimized_resume": result["optimized_resume"],
-                    "final_evaluation": result["final_evaluation"],
-                    "career_development": result["career_development"]
+                    "features.resumeOptimizer.$.status":    "completed",
+                    "features.resumeOptimizer.$.result":    result,
+                    "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)
                 }}
             )
 
-            # Return everything at top level
             return {
                 "optimization_id": optimization_id,
                 **result
             }
-            
-        except Exception as e:
+        except Exception:
+            logger.exception(f"[{user_id}] Resume optimization failed (id={optimization_id})")
             users_collection.update_one(
                 {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
                 {"$set": {
-                    "status": "failed",
-                    "error": str(e),
-                    "updatedAt": datetime.now(UTC)
+                    "features.resumeOptimizer.$.status":    "failed",
+                    "features.resumeOptimizer.$.error":     str(Exception),
+                    "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)
                 }}
             )
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal error during resume optimization")
 
 # ----------------
 # Learning Pathways Endpoint
