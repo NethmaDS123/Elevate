@@ -13,56 +13,50 @@ import {
   FiTrendingUp,
   FiSettings,
   FiUsers,
+  FiFileText,
 } from "react-icons/fi";
 
-// Parse AI-generated evaluation into structured data
-function parseEvaluation(evaluation: string): Record<string, string> {
-  const sections = evaluation.split("\n").filter((line) => line.trim() !== "");
-  const result: Record<string, string> = {};
-  let currentKey = "";
-  sections.forEach((line) => {
-    if (line.includes(":")) {
-      const [key, ...rest] = line.split(":");
-      currentKey = key.trim();
-      result[currentKey] = rest.join(":").trim();
-    } else if (currentKey) {
-      result[currentKey] += `\n${line.trim()}`;
-    }
-  });
-  return result;
+interface Evaluation {
+  overall_score: number;
+  breakdown: {
+    innovation: { score: number; analysis: string };
+    technical_complexity: { score: number; analysis: string };
+    completeness_feasibility: { score: number; analysis: string };
+    scalability_maintainability: { score: number; analysis: string };
+    industry_relevance: { score: number; analysis: string };
+  };
+  strengths: string[];
+  areas_for_improvement: string[];
+  resume_mention: {
+    include: boolean;
+    justification: string;
+  };
 }
 
-// Icons for evaluation categories
-const getSectionIcon = (key: string) => {
-  const lowerKey = key.toLowerCase();
-  if (lowerKey.includes("innovation"))
-    return <FiTrendingUp className="w-5 h-5 mr-2 text-blue-500" />;
-  if (lowerKey.includes("technical"))
-    return <FiCpu className="w-5 h-5 mr-2 text-purple-500" />;
-  if (lowerKey.includes("feasibility"))
-    return <FiCheckCircle className="w-5 h-5 mr-2 text-green-500" />;
-  if (lowerKey.includes("scalability"))
-    return <FiSettings className="w-5 h-5 mr-2 text-yellow-500" />;
-  if (lowerKey.includes("industry"))
-    return <FiUsers className="w-5 h-5 mr-2 text-gray-500" />;
-  return <FiStar className="w-5 h-5 mr-2 text-gray-400" />;
+const icons: Record<string, JSX.Element> = {
+  innovation: <FiTrendingUp className="w-5 h-5 mr-2 text-blue-500" />,
+  technical_complexity: <FiCpu className="w-5 h-5 mr-2 text-purple-500" />,
+  completeness_feasibility: (
+    <FiCheckCircle className="w-5 h-5 mr-2 text-green-500" />
+  ),
+  scalability_maintainability: (
+    <FiSettings className="w-5 h-5 mr-2 text-yellow-500" />
+  ),
+  industry_relevance: <FiUsers className="w-5 h-5 mr-2 text-gray-500" />,
 };
 
-// Color themes based on category
-const getSectionColor = (key: string) => {
-  const lowerKey = key.toLowerCase();
-  if (lowerKey.includes("innovation")) return "border-blue-400 bg-blue-50";
-  if (lowerKey.includes("technical")) return "border-purple-400 bg-purple-50";
-  if (lowerKey.includes("feasibility")) return "border-green-400 bg-green-50";
-  if (lowerKey.includes("scalability")) return "border-yellow-400 bg-yellow-50";
-  if (lowerKey.includes("industry")) return "border-gray-400 bg-gray-50";
-  return "border-gray-200 bg-white";
+const colors: Record<string, string> = {
+  innovation: "from-blue-400 to-blue-600",
+  technical_complexity: "from-purple-400 to-purple-600",
+  completeness_feasibility: "from-green-400 to-green-600",
+  scalability_maintainability: "from-yellow-400 to-yellow-600",
+  industry_relevance: "from-gray-400 to-gray-600",
 };
 
 export default function ProjectEvaluationPage() {
   const { data: session, status } = useSession();
   const [projectDescription, setProjectDescription] = useState("");
-  const [evaluation, setEvaluation] = useState("");
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -70,25 +64,22 @@ export default function ProjectEvaluationPage() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
-      setEvaluation("");
+      setEvaluation(null);
 
       if (!session) {
         setError("You must be logged in to evaluate a project.");
         return;
       }
-
       if (!projectDescription.trim()) {
         setError("Project description is required.");
         return;
       }
 
       setLoading(true);
-
       try {
         const backendUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL ||
           "https://elevatebackend.onrender.com";
-
         const res = await fetch(`${backendUrl}/evaluate_project`, {
           method: "POST",
           headers: {
@@ -97,27 +88,21 @@ export default function ProjectEvaluationPage() {
           },
           body: JSON.stringify({ project_description: projectDescription }),
         });
-
         const data = await res.json();
-
         if (res.ok) {
-          // Assuming that the API returns an object that might look like:
-          // { evaluation: { evaluation: "<analysis text>" } }
-          setEvaluation(data.evaluation?.evaluation || data.evaluation);
+          setEvaluation(data.evaluation);
         } else {
-          setError(data.error || "Something went wrong.");
+          setError(data.error || "Failed to evaluate project");
         }
       } catch (err) {
-        console.error("Error during evaluation:", err);
-        setError("An error occurred while evaluating the project.");
+        console.error(err);
+        setError("An error occurred while evaluating the project");
       } finally {
         setLoading(false);
       }
     },
     [projectDescription, session]
   );
-
-  const parsedOutput = evaluation ? parseEvaluation(evaluation) : null;
 
   if (status === "loading") {
     return (
@@ -126,7 +111,6 @@ export default function ProjectEvaluationPage() {
       </div>
     );
   }
-
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -139,33 +123,33 @@ export default function ProjectEvaluationPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl mx-auto space-y-12">
+        {/* Header & Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text inline-block">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
               AI Project Evaluator
             </h1>
-            <p className="text-lg text-gray-600">
-              AI-powered feedback on your project&apos;s strengths and areas for
-              improvement.
+            <p className="text-gray-600">
+              Get a detailed, actionable evaluation of your software projects
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl">
+            <div className="bg-white rounded-xl shadow p-6">
               <label
                 htmlFor="projectDescription"
-                className="block text-lg font-semibold text-gray-800 mb-4 flex items-center"
+                className="block text-lg font-semibold text-gray-800 mb-3 flex items-center"
               >
                 <FiEdit3 className="mr-2 text-purple-600" />
                 Project Description
               </label>
               <textarea
                 id="projectDescription"
-                className="w-full h-48 px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none"
+                className="w-full h-40 px-4 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-purple-500 resize-none"
                 placeholder="Describe your project in detail..."
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
@@ -176,26 +160,25 @@ export default function ProjectEvaluationPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center"
+                className="p-4 bg-red-50 border border-red-200 rounded-md flex items-center"
               >
                 <FiAlertTriangle className="text-red-500 mr-3 text-xl" />
                 <span className="text-red-600 font-medium">{error}</span>
               </motion.div>
             )}
 
-            <div className="flex justify-between gap-4">
+            <div className="flex justify-end gap-4">
               <button
                 type="button"
                 onClick={() => setProjectDescription("")}
-                className="px-5 py-2.5 text-gray-600 rounded-lg hover:bg-gray-100"
+                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md"
               >
-                Clear Input
+                Clear
               </button>
-
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg flex items-center"
+                className="px-6 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md flex items-center"
               >
                 {loading ? (
                   <>
@@ -203,33 +186,120 @@ export default function ProjectEvaluationPage() {
                   </>
                 ) : (
                   <>
-                    <FiStar className="mr-2" /> Evaluate Project
+                    <FiStar className="mr-2" /> Evaluate
                   </>
                 )}
               </button>
             </div>
           </form>
-
-          <AnimatePresence>
-            {evaluation && parsedOutput && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {Object.entries(parsedOutput).map(([key, value]) => (
-                  <motion.div
-                    key={key}
-                    className={`mt-6 p-6 rounded-xl border-l-4 ${getSectionColor(
-                      key
-                    )}`}
-                  >
-                    <h3 className="text-xl font-semibold flex items-center">
-                      {getSectionIcon(key)} {key}
-                    </h3>
-                    <p className="text-gray-600">{value}</p>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
+
+        {/* Results */}
+        <AnimatePresence>
+          {evaluation && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-8"
+            >
+              {/* Overall Score */}
+              <div className="bg-white rounded-xl p-6 shadow flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-gray-800">
+                    Overall Score
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    Based on five evaluation criteria
+                  </p>
+                </div>
+                <div className="text-5xl font-bold text-purple-600">
+                  {evaluation.overall_score}
+                </div>
+              </div>
+
+              {/* Breakdown Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(evaluation.breakdown).map(
+                  ([key, { score, analysis }]) => (
+                    <motion.div
+                      key={key}
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-white rounded-xl shadow p-6"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center text-lg font-semibold text-gray-800">
+                          {icons[key]}
+                          {key
+                            .split("_")
+                            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                            .join(" ")}
+                        </div>
+                        <div className="text-lg font-bold">{score}</div>
+                      </div>
+                      {/* Progress Bar */}
+                      <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
+                        <div
+                          className={`h-full rounded-full bg-gradient-to-r ${colors[key]}`}
+                          style={{ width: `${score}%` }}
+                        />
+                      </div>
+                      <p className="text-gray-600 text-sm leading-relaxed">
+                        {analysis}
+                      </p>
+                    </motion.div>
+                  )
+                )}
+              </div>
+
+              {/* Strengths & Improvements */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <motion.div
+                  whileHover={{ translateY: -2 }}
+                  className="bg-green-50 p-6 rounded-xl shadow"
+                >
+                  <h3 className="flex items-center text-xl font-semibold text-green-700 mb-3">
+                    <FiCheckCircle className="mr-2 text-green-500" />
+                    Key Strengths
+                  </h3>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-700">
+                    {evaluation.strengths.map((s, i) => (
+                      <li key={i}>{s}</li>
+                    ))}
+                  </ul>
+                </motion.div>
+                <motion.div
+                  whileHover={{ translateY: -2 }}
+                  className="bg-yellow-50 p-6 rounded-xl shadow"
+                >
+                  <h3 className="flex items-center text-xl font-semibold text-yellow-700 mb-3">
+                    <FiAlertTriangle className="mr-2 text-yellow-500" />
+                    Areas for Improvement
+                  </h3>
+                  <ul className="list-disc pl-6 space-y-2 text-gray-700">
+                    {evaluation.areas_for_improvement.map((a, i) => (
+                      <li key={i}>{a}</li>
+                    ))}
+                  </ul>
+                </motion.div>
+              </div>
+
+              {/* Resume Recommendation */}
+              <motion.div
+                whileHover={{ translateY: -2 }}
+                className="bg-blue-50 p-6 rounded-xl shadow"
+              >
+                <h3 className="flex items-center text-xl font-semibold text-blue-700 mb-3">
+                  <FiFileText className="mr-2 text-blue-500" />
+                  Resume Recommendation
+                </h3>
+                <p className="text-gray-700">
+                  {evaluation.resume_mention.include ? "✅ Include" : "⚠️ Skip"}{" "}
+                  — {evaluation.resume_mention.justification}
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,65 +1,30 @@
 "use client";
 
 import React, { useState } from "react";
-import { BookOpenIcon, AcademicCapIcon } from "@heroicons/react/24/outline";
 import { useSession } from "next-auth/react";
+import { AcademicCapIcon, BookOpenIcon } from "@heroicons/react/24/outline";
 
-interface TopicBreakdown {
-  title: string;
+interface Topic {
+  name: string;
   subtopics: string[];
+  resources: string[];
+  projects: string[];
 }
 
-interface ModuleData {
-  moduleTitle: string;
-  topics: TopicBreakdown[];
+interface Step {
+  step: number;
+  title: string;
+  duration: string;
+  core_goals: string[];
+  topics: Topic[];
 }
 
-interface ParsedPathway {
+interface Pathway {
   topic: string;
-  modules: ModuleData[];
-}
-
-function parseLearningPathway(text: string): ParsedPathway | null {
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length === 0) return null;
-
-  const firstLineMatch = lines[0].match(/^Learning Pathway for (.+):$/i);
-  if (!firstLineMatch) return null;
-  const topic = firstLineMatch[1];
-
-  const modules: ModuleData[] = [];
-  let currentModule: ModuleData | null = null;
-  let currentTopic: TopicBreakdown | null = null;
-
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-
-    const moduleMatch = line.match(/^Module\s+\d+:\s*(.+)$/i);
-    if (moduleMatch) {
-      if (currentModule) modules.push(currentModule);
-      currentModule = { moduleTitle: moduleMatch[1], topics: [] };
-      currentTopic = null;
-      continue;
-    }
-
-    const topicMatch = line.match(/^- (.+)$/);
-    if (topicMatch && currentModule) {
-      currentTopic = { title: topicMatch[1], subtopics: [] };
-      currentModule.topics.push(currentTopic);
-      continue;
-    }
-
-    const subtopicMatch = line.match(/^\* (.+)$/);
-    if (subtopicMatch && currentTopic) {
-      currentTopic.subtopics.push(subtopicMatch[1]);
-    }
-  }
-
-  if (currentModule) modules.push(currentModule);
-  return modules.length > 0 ? { topic, modules } : null;
+  timeline: string;
+  steps: Step[];
+  industry_readiness: string[];
+  continuous_learning: string[];
 }
 
 export default function LearningPathwaysPage() {
@@ -67,30 +32,36 @@ export default function LearningPathwaysPage() {
   const [searchTopic, setSearchTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [pathway, setPathway] = useState<ParsedPathway | null>(null);
+  const [pathway, setPathway] = useState<Pathway | null>(null);
 
   const exampleTopics = [
-    "Blockchain",
-    "AI Ethics",
-    "Cloud Computing",
+    "Computer Science",
+    "Data Science",
+    "Computer Architecture",
+    "Web Development",
     "Data Structures",
     "Algorithms",
     "Operating Systems",
-    "Computer Networks",
     "Databases",
     "Software Engineering",
     "Distributed Systems",
     "Cybersecurity",
     "Machine Learning",
     "DevOps",
-    "Computer Architecture",
-    "Web Development",
+    "Blockchain",
+    "AI Ethics",
+    "Cloud Computing",
   ];
+
   const fetchLearningPathway = async (topic: string) => {
     setError("");
     setPathway(null);
+    const token =
+      session?.user?.accessToken ??
+      // NextAuth by default returns id_token in session.user.id_token
+      (session?.user as any)?.id_token;
 
-    if (!session?.user?.id_token) {
+    if (!token) {
       setError("You must be logged in to generate a pathway.");
       return;
     }
@@ -100,43 +71,37 @@ export default function LearningPathwaysPage() {
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         "https://elevatebackend.onrender.com";
-
       const res = await fetch(`${backendUrl}/learning_pathways`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${session.user.id_token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ topic }),
       });
 
       const data = await res.json();
-
       if (!res.ok || data.error) {
         setError(data.error || "Failed to fetch learning pathway");
-        return;
-      }
-
-      if (data.status === "completed") {
-        const parsed = parseLearningPathway(data.learning_pathway);
-        if (!parsed) {
-          setError("Invalid pathway format received");
-          return;
-        }
-        setPathway(parsed);
+      } else if (data.status === "completed") {
+        setPathway(data.learning_pathway as Pathway);
       } else {
-        setError(data.error || "Pathway generation failed");
+        setError("Pathway generation in progress or failed");
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      setError("An error occurred while fetching the learning pathway");
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
+
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await fetchLearningPathway(searchTopic);
+    if (searchTopic.trim()) {
+      await fetchLearningPathway(searchTopic.trim());
+    }
   };
 
   const handleExampleClick = async (topic: string) => {
@@ -151,7 +116,6 @@ export default function LearningPathwaysPage() {
       </div>
     );
   }
-
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -167,24 +131,25 @@ export default function LearningPathwaysPage() {
       <div className="max-w-5xl mx-auto">
         <header className="text-center mb-16">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
-            Learning Pathways
+            Expert Learning Pathways
           </h1>
           <p className="text-xl text-gray-600">
-            Master complex technical subjects through structured learning paths
+            Structured roadmaps for mastering complex technical domains
           </p>
         </header>
 
+        {/* Search Form */}
         <form onSubmit={handleSearchSubmit} className="space-y-4">
-          <div className="flex gap-4 flex-col md:flex-row">
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
+              <BookOpenIcon className="h-6 w-6 text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchTopic}
                 onChange={(e) => setSearchTopic(e.target.value)}
-                placeholder="Enter a technical topic (e.g., Machine Learning)"
-                className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all duration-200 placeholder-gray-400 text-lg"
+                placeholder="Enter a technical topic (e.g., Computer Science)"
+                className="w-full px-6 py-4 border-2 border-gray-200 rounded-2xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 placeholder-gray-400 text-lg"
               />
-              <BookOpenIcon className="h-6 w-6 text-gray-400 absolute right-6 top-1/2 -translate-y-1/2" />
             </div>
             <button
               type="submit"
@@ -201,7 +166,6 @@ export default function LearningPathwaysPage() {
               )}
             </button>
           </div>
-
           {error && (
             <div className="p-4 bg-red-50 rounded-xl flex items-center gap-3 border border-red-200">
               <AcademicCapIcon className="h-6 w-6 text-red-600 flex-shrink-0" />
@@ -210,6 +174,7 @@ export default function LearningPathwaysPage() {
           )}
         </form>
 
+        {/* Examples */}
         <div className="mt-12 flex flex-wrap gap-3">
           {exampleTopics.map((topic) => (
             <button
@@ -222,54 +187,123 @@ export default function LearningPathwaysPage() {
           ))}
         </div>
 
+        {/* Render Pathway */}
         {pathway && (
           <div className="mt-16 space-y-12">
             <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-              <h2 className="text-4xl font-bold mb-6 text-gray-900">
-                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  {pathway.topic}
-                </span>{" "}
-                Learning Pathway
-              </h2>
+              {/* Header */}
+              <div className="mb-8">
+                <h2 className="text-4xl font-bold mb-2 text-gray-900">
+                  <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    {pathway.topic}
+                  </span>{" "}
+                  Learning Pathway
+                </h2>
+                <p className="text-lg text-gray-600">{pathway.timeline}</p>
+              </div>
 
-              {pathway.modules.map((module, idx) => (
-                <div key={idx} className="group relative mb-12">
-                  <div className="absolute -left-8 top-6 h-full w-1 bg-gray-100 group-first:h-[calc(100%-2.5rem)] group-last:h-[2.5rem]" />
-                  <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 font-bold text-xl">
-                      {idx + 1}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-4">
-                        {module.moduleTitle}
-                      </h3>
-                      <div className="space-y-6">
-                        {module.topics.map((topic, topicIdx) => (
-                          <div
-                            key={topicIdx}
-                            className="bg-gray-50 rounded-xl p-6"
-                          >
-                            <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                              <span className="w-2 h-2 bg-purple-500 rounded-full" />
-                              {topic.title}
-                            </h4>
-                            <ul className="space-y-2 ml-6">
-                              {topic.subtopics.map((sub, subIdx) => (
-                                <li
-                                  key={subIdx}
-                                  className="text-gray-600 before:content-['▹'] before:text-purple-500 before:mr-2"
-                                >
-                                  {sub}
-                                </li>
+              {/* Steps */}
+              {pathway.steps.map((s) => (
+                <section key={s.step} className="mb-12">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    Step {s.step}: {s.title}{" "}
+                    <span className="text-gray-500">({s.duration})</span>
+                  </h3>
+
+                  {/* Core Goals */}
+                  <div className="mb-6 bg-purple-50 p-4 rounded-xl">
+                    <h4 className="font-semibold text-purple-700 mb-2">
+                      Core Goals
+                    </h4>
+                    <ul className="list-disc pl-6 text-gray-700">
+                      {s.core_goals.map((goal, i) => (
+                        <li key={i}>{goal}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Topics */}
+                  <div className="space-y-6">
+                    {s.topics.map((t, ti) => (
+                      <div
+                        key={ti}
+                        className="bg-gray-50 rounded-xl p-6 shadow-sm"
+                      >
+                        <h4 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-purple-500 rounded-full" />
+                          {t.name}
+                        </h4>
+
+                        {/* Subtopics */}
+                        {t.subtopics.length > 0 && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-gray-700 mb-2">
+                              Subtopics
+                            </h5>
+                            <ul className="list-disc pl-6 text-gray-600">
+                              {t.subtopics.map((sub, si) => (
+                                <li key={si}>{sub}</li>
                               ))}
                             </ul>
                           </div>
-                        ))}
+                        )}
+
+                        {/* Resources */}
+                        {t.resources.length > 0 && (
+                          <div className="mb-4">
+                            <h5 className="font-medium text-gray-700 mb-2">
+                              Recommended Resources
+                            </h5>
+                            <ul className="list-disc pl-6 text-blue-600">
+                              {t.resources.map((res, ri) => (
+                                <li key={ri}>{res}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Projects */}
+                        {t.projects.length > 0 && (
+                          <div>
+                            <h5 className="font-medium text-gray-700 mb-2">
+                              Project Ideas
+                            </h5>
+                            <ul className="list-disc pl-6 text-gray-600">
+                              {t.projects.map((proj, pi) => (
+                                <li key={pi}>{proj}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    ))}
                   </div>
-                </div>
+                </section>
               ))}
+
+              {/* Industry Readiness */}
+              <div className="mt-12 bg-blue-50 p-6 rounded-xl">
+                <h3 className="text-2xl font-bold text-blue-700 mb-4">
+                  Industry Readiness
+                </h3>
+                <ul className="list-disc pl-6 text-gray-700">
+                  {pathway.industry_readiness.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Continuous Learning */}
+              <div className="mt-8 bg-green-50 p-6 rounded-xl">
+                <h3 className="text-2xl font-bold text-green-700 mb-4">
+                  Continuous Learning
+                </h3>
+                <ul className="list-disc pl-6 text-gray-700">
+                  {pathway.continuous_learning.map((item, i) => (
+                    <li key={i}>{item}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
           </div>
         )}
