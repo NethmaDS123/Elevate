@@ -1,102 +1,108 @@
+import os
+import re
+import json
+import uuid
+import logging
 import openai
 from dotenv import load_dotenv
-import os
-import uuid
 from datetime import datetime, UTC
 from database import store_learning_pathway_result
 
-# Load environment variables and configure OpenAI API key
+# Configure logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+# Load and configure
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
-    raise ValueError("OPENAI_API_KEY not found in environment variables!")
+    raise ValueError("OPENAI_API_KEY not found")
 
 class LearningPathways:
-    def __init__(self, model: str = "gpt-3.5-turbo"):
+    def __init__(self, model: str = "gpt-4o"):
         self.model = model
 
     def generate_pathway(self, user_id: str, topic: str) -> dict:
         pathway_id = str(uuid.uuid4())
-        timestamp = datetime.now(UTC)
-        
+        now = datetime.now(UTC)
+
+        # 1. Store initial “processing” state
+        store_learning_pathway_result(user_id, {
+            "pathway_id": pathway_id,
+            "topic": topic,
+            "status": "processing",
+            "createdAt": now,
+            "updatedAt": now
+        })
+
+        # 2. Build the prompt
+        prompt = f"""
+You are a senior curriculum architect. Produce a **pure JSON** learning pathway for "{topic}" with the following schema:
+
+{{
+  "topic": "{topic}",
+  "timeline": "Approximate total duration e.g. Months 0-30",
+  "steps": [
+    {{
+      "step": <int>,
+      "title": "<Phase title>",
+      "duration": "Months X–Y",
+      "core_goals": ["<goal1>", "<goal2>"],
+      "topics": [
+        {{
+          "name": "<main topic>",
+          "subtopics": ["<sub1>", "<sub2>"],
+          "resources": ["<name> (URL)"],
+          "projects": ["<project idea>"]
+        }}
+      ]
+    }}
+  ],
+  "industry_readiness": ["<tip1>", "<tip2>"],
+  "continuous_learning": ["<advanced topic1>"]
+}}
+
+Fill in this structure with:
+- 5–6 steps (each ~4–6 months)
+- Rich core_goals
+- 3–5 topics per step, each with 2–4 subtopics, 1–3 resources, 1–2 project ideas
+- A final “industry_readiness” array
+- A “continuous_learning” array for lifelong growth
+
+Return **only** the JSON.
+"""
+
+        # 3. Call the new v1 API
         try:
-            # Store initial processing state
-            store_learning_pathway_result(user_id, {
-                "pathway_id": pathway_id,
-                "topic": topic,
-                "status": "processing",
-                "createdAt": timestamp,
-                "updatedAt": timestamp
-            })
-
-            # Generate pathway content
-            prompt = f"""You are an expert curriculum designer creating detailed learning pathways. For '{topic}', generate:
-
-                  1. A hierarchical breakdown of the subject into modules and subtopics
-                  2. 6-8 core modules with clear progression
-                  3. Each module should contain:
-                    - 4-8 key topics
-                    - Subtopic breakdowns for complex concepts
-                    - Practical applications where relevant
-
-                  Format strictly as:
-
-                  Learning Pathway for {topic}:
-                  Module 1: [Module Title]
-                    - [Main Topic 1]
-                      * [Subtopic 1.1]
-                      * [Subtopic 1.2]
-                    - [Main Topic 2]
-                      * [Subtopic 2.1]
-                  Module 2: [Module Title]
-                    - [Main Topic 1]
-                      * [Subtopic 1.1]
-                      * [Subtopic 1.2]
-
-                  Example for "Data Structures":
-                  Module 1: Fundamental Data Structures
-                    - Arrays
-                      * Memory allocation
-                      * Time complexity analysis
-                      * Multi-dimensional arrays
-                    - Linked Lists
-                      * Singly vs doubly linked
-                      * Pointer manipulation
-                      * Real-world applications
-
-                  Focus on technical depth and logical progression. Avoid introductory fluff."""
-            response = openai.chat.completions.create(
+            logger.info(f"[{user_id}] Calling OpenAI for topic='{topic}'")
+            resp = openai.chat.completions.create(
                 model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a technical curriculum architect."},
-                    {"role": "user", "content": prompt},
-                ],
-                temperature=0.3,
-                max_tokens=1500,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                max_tokens=2000,
             )
-            
-            pathway_text = response.choices[0].message.content.strip()
-            
-            # Update with successful result
-            store_learning_pathway_result(user_id, {
-                "pathway_id": pathway_id,
-                "status": "completed",
-                "learning_pathway": pathway_text,
-                "updatedAt": datetime.now(UTC)
-            })
-
-            return {
-                "pathway_id": pathway_id,
-                "learning_pathway": pathway_text,
-                "status": "completed"
-            }
-
         except Exception as e:
-            error_data = {
-                "pathway_id": pathway_id,
-                "status": "failed",
-                "error": f"Pathway generation failed: {str(e)}",
-                "updatedAt": datetime.now(UTC)
-            }
-            store_learning_pathway_result(user_id, error_data)
-            return error_data
+            logger.exception(f"[{user_id}] OpenAI API call failed")
+            raise
+
+        # 4. Parse out JSON
+        raw = resp.choices[0].message.content.strip()
+        match = re.search(r"```json\s*(\{[\s\S]+\})\s*```", raw)
+        json_str = match.group(1) if match else raw
+
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            logger.error(f"[{user_id}] Failed to parse JSON:\n{json_str}")
+            raise
+
+        # 5. Persist completed result
+        store_learning_pathway_result(user_id, {
+            "pathway_id": pathway_id,
+            "status": "completed",
+            "learning_pathway": data,
+            "updatedAt": datetime.now(UTC)
+        })
+
+        logger.info(f"[{user_id}] Learning pathway generation succeeded (pathway_id={pathway_id})")
+        return {"pathway_id": pathway_id, "learning_pathway": data, "status": "completed"}

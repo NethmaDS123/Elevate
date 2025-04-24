@@ -83,6 +83,7 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
         user_info = verify_google_token(token)
         user_id = user_info["sub"]
     except Exception as e:
+        logger.warning(f"[unauthenticated] evaluate_project blocked: {e}")
         raise HTTPException(status_code=401, detail="Invalid authentication token") from e
 
     body = await request.json()
@@ -90,50 +91,59 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
     if not project_description:
         raise HTTPException(status_code=400, detail="Project description is required.")
 
-    # Generate unique ID for this evaluation
     evaluation_id = str(uuid.uuid4())
     timestamp = datetime.now(UTC)
-    
-    # Create initial entry
-    initial_data = {
+
+    # Create initial "processing" entry
+    store_evaluation_result(user_id, {
         "evaluation_id": evaluation_id,
         "project_description": project_description,
         "status": "processing",
         "createdAt": timestamp,
         "updatedAt": timestamp
-    }
-    store_evaluation_result(user_id, initial_data)
+    })
 
     async with semaphore:
         try:
-            evaluation = await asyncio.get_event_loop().run_in_executor(
-                None, project_evaluator.evaluate, user_id, project_description
+            logger.info(f"[{user_id}] Starting project evaluation (id={evaluation_id})")
+
+            # Run the evaluator (returns a structured dict now)
+            evaluation: dict = await asyncio.get_event_loop().run_in_executor(
+                None,
+                project_evaluator.evaluate,
+                user_id,
+                project_description
             )
-            
-            # Update existing entry
-            update_data = {
-                "status": "completed",
-                "evaluation": evaluation,
-                "updatedAt": datetime.now(UTC)
+
+            logger.info(f"[{user_id}] Completed project evaluation (id={evaluation_id}) — score={evaluation.get('overall_score')}")
+
+            # Persist the completed result into the user's feature array
+            users_collection.update_one(
+                {"_id": user_id, "features.projectEvaluation.evaluation_id": evaluation_id},
+                {"$set": {
+                    "features.projectEvaluation.$.status":     "completed",
+                    "features.projectEvaluation.$.evaluation": evaluation,
+                    "features.projectEvaluation.$.updatedAt":  datetime.now(UTC)
+                }}
+            )
+
+            # Return the evaluation dict
+            return {
+                "evaluation_id": evaluation_id,
+                "evaluation": evaluation
             }
             
-            users_collection.update_one(
-                {"_id": user_id, "features.projectEvaluation.evaluation_id": evaluation_id},
-                {"$set": {"features.projectEvaluation.$.status": "completed",
-                          "features.projectEvaluation.$.evaluation": evaluation,
-                          "features.projectEvaluation.$.updatedAt": datetime.now(UTC)}}
-            )
-            
-            return {"evaluation": evaluation, "evaluation_id": evaluation_id}
-            
         except Exception as e:
+            logger.exception(f"[{user_id}] Project evaluation failed (id={evaluation_id})")
             users_collection.update_one(
                 {"_id": user_id, "features.projectEvaluation.evaluation_id": evaluation_id},
-                {"$set": {"features.projectEvaluation.$.status": "failed",
-                          "features.projectEvaluation.$.error": str(e),
-                          "features.projectEvaluation.$.updatedAt": datetime.now(UTC)}}
+                {"$set": {
+                    "features.projectEvaluation.$.status":    "failed",
+                    "features.projectEvaluation.$.error":     str(e),
+                    "features.projectEvaluation.$.updatedAt": datetime.now(UTC)
+                }}
             )
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Internal error during project evaluation")
 
 # ----------------
 # Resume Optimization Endpoint
@@ -222,14 +232,14 @@ async def get_learning_pathways(request: Request, authorization: str = Header(No
         user_info = verify_google_token(token)
         user_id = user_info["sub"]
     except Exception:
+        logger.warning("Invalid auth token on learning_pathways")
         raise HTTPException(status_code=401, detail="Invalid authentication token")
 
     body = await request.json()
     topic = body.get("topic")
     if not topic:
-        raise HTTPException(status_code=400, detail="Topic is required.")
+        raise HTTPException(status_code=400, detail="`topic` is required.")
 
-    # ← NEW: create initial "processing" entry
     pathway_id = str(uuid.uuid4())
     now = datetime.now(UTC)
     store_learning_pathway_result(user_id, {
@@ -242,32 +252,41 @@ async def get_learning_pathways(request: Request, authorization: str = Header(No
 
     async with semaphore:
         try:
-            pathway = await asyncio.get_event_loop().run_in_executor(
-                None, LearningPathways().generate_pathway, user_id, topic
+            logger.info(f"[{user_id}] Starting generation for topic='{topic}' (pathway_id={pathway_id})")
+            # Use the existing instance, not re-instantiating
+            result = await asyncio.get_event_loop().run_in_executor(
+                None,
+                learning_pathways_instance.generate_pathway,
+                user_id,
+                topic
             )
 
-            # update to completed
+            # Persist only the JSON payload (the 'learning_pathway' key)
             users_collection.update_one(
                 {"_id": user_id, "features.learningPathways.pathway_id": pathway_id},
                 {"$set": {
-                    "features.learningPathways.$.status": "completed",
-                    "features.learningPathways.$.result": pathway,
-                    "features.learningPathways.$.updatedAt": datetime.now(UTC)
+                    "features.learningPathways.$.status":     "completed",
+                    "features.learningPathways.$.result":     result["learning_pathway"],
+                    "features.learningPathways.$.updatedAt":  datetime.now(UTC)
                 }}
             )
 
-            return {"pathway_id": pathway_id, **pathway}
+            logger.info(f"[{user_id}] Completed generation for pathway_id={pathway_id}")
+            return result
 
         except Exception as e:
+            logger.exception(f"[{user_id}] Failed to generate pathway (pathway_id={pathway_id})")
             users_collection.update_one(
                 {"_id": user_id, "features.learningPathways.pathway_id": pathway_id},
                 {"$set": {
-                    "features.learningPathways.$.status": "failed",
-                    "features.learningPathways.$.error": str(e),
-                    "features.learningPathways.$.updatedAt": datetime.now(UTC)
+                    "features.learningPathways.$.status":     "failed",
+                    "features.learningPathways.$.error":      str(e),
+                    "features.learningPathways.$.updatedAt":  datetime.now(UTC)
                 }}
             )
-            raise HTTPException(status_code=500, detail=str(e))
+            # return a generic 500 to the client
+            raise HTTPException(status_code=500, detail="Internal error generating learning pathway")
+
 # ----------------
 # Interview Question Analysis Endpoint
 # ----------------
