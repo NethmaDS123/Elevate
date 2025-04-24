@@ -11,33 +11,19 @@ import {
   FiTarget,
   FiTool,
   FiBookOpen,
+  FiThumbsUp,
+  FiAlertTriangle,
+  FiZap,
 } from "react-icons/fi";
 
 interface OptimizationResponse {
-  initial_assessment: {
-    score: number;
-    strengths: string[];
-    content_gaps: string[];
-  };
-  relevance_analysis: {
-    score: number;
-    work_matches: string[];
-    project_matches: string[];
-    skill_gaps: string[];
-  };
   optimized_resume: string;
-  final_evaluation: {
-    score: number;
-    integrity_check: {
-      new_content_added: boolean;
-      original_data_retained: number;
-    };
+  analysis: {
+    strengths: string[];
+    weaknesses: string[];
+    recommendations: string[];
   };
-  career_development: {
-    skills_to_learn: string[];
-    project_ideas: string[];
-    certifications: string[];
-  };
+  ats_score: number;
 }
 
 export default function ResumeOptimizer() {
@@ -63,8 +49,7 @@ export default function ResumeOptimizer() {
 
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        "https://elevatebackend.onrender.com";
+        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
       const res = await axios.post<OptimizationResponse>(
         `${backendUrl}/optimize_resume`,
@@ -120,29 +105,6 @@ export default function ResumeOptimizer() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
-
-  const ScoreChange = ({
-    initial,
-    final,
-  }: {
-    initial: number;
-    final: number;
-  }) => (
-    <div className="flex items-center gap-4">
-      <div className="text-2xl font-bold text-blue-600">
-        {initial} → {final}
-      </div>
-      <div
-        className={`px-3 py-1 rounded-full ${
-          final > initial
-            ? "bg-green-100 text-green-800"
-            : "bg-red-100 text-red-800"
-        }`}
-      >
-        {(((final - initial) / initial) * 100).toFixed(1)}%
-      </div>
-    </div>
-  );
 
   const ProgressBar = ({ value }: { value: number }) => (
     <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -276,73 +238,32 @@ export default function ResumeOptimizer() {
                 }`}
               >
                 <FiTarget className="w-5 h-5" />
-                Job Analysis
+                Analysis
               </button>
               <button
-                onClick={() => setActiveTab("suggestions")}
+                onClick={() => setActiveTab("recommendations")}
                 className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
-                  activeTab === "suggestions"
+                  activeTab === "recommendations"
                     ? "bg-blue-50 text-blue-600"
                     : "text-gray-600"
                 }`}
               >
-                <FiTool className="w-5 h-5" />
-                Suggestions
+                <FiZap className="w-5 h-5" />
+                Recommendations
               </button>
             </div>
 
             {activeTab === "overview" && (
-              <div className="grid gap-6 md:grid-cols-2">
-                <AnalysisSection
-                  title="Score Improvement"
-                  icon={<FiActivity />}
-                >
-                  <ScoreChange
-                    initial={response.initial_assessment.score}
-                    final={response.final_evaluation.score}
-                  />
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-700">
-                      Content Integrity
-                    </p>
-                    <ProgressBar
-                      value={
-                        response.final_evaluation.integrity_check
-                          .original_data_retained
-                      }
-                    />
-                    <span className="text-sm text-gray-500">
-                      {
-                        response.final_evaluation.integrity_check
-                          .original_data_retained
-                      }
-                      % original content retained
-                    </span>
-                  </div>
-                </AnalysisSection>
-
-                <AnalysisSection title="Relevance Score" icon={<FiTarget />}>
+              <div className="grid gap-6">
+                <AnalysisSection title="ATS Score" icon={<FiActivity />}>
                   <div className="text-3xl font-bold text-blue-600">
-                    {response.relevance_analysis.score}%
+                    {response.ats_score}%
                   </div>
-                  <ProgressBar value={response.relevance_analysis.score} />
-                  <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium text-gray-700">
-                      Top Matches
-                    </p>
-                    <ul className="space-y-2">
-                      {response.relevance_analysis.work_matches
-                        .slice(0, 3)
-                        .map((match, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-gray-600 flex items-center gap-2"
-                          >
-                            <span className="text-green-600">✓</span>
-                            {match}
-                          </li>
-                        ))}
-                    </ul>
+                  <ProgressBar value={response.ats_score} />
+                  <div className="mt-4 text-sm text-gray-600">
+                    This score reflects how well your resume matches the job
+                    requirements based on ATS algorithms and keyword
+                    optimization.
                   </div>
                 </AnalysisSection>
               </div>
@@ -350,56 +271,33 @@ export default function ResumeOptimizer() {
 
             {activeTab === "analysis" && (
               <div className="grid gap-6 md:grid-cols-2">
-                <AnalysisSection title="Experience Matches" icon={<FiTool />}>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium mb-2">Work Experience</h4>
-                      <ul className="space-y-3">
-                        {response.relevance_analysis.work_matches.map(
-                          (match, i) => (
-                            <li
-                              key={i}
-                              className="flex items-center justify-between text-sm"
-                            >
-                              <span>{match.split(" (")[0]}</span>
-                              <span className="text-blue-600">
-                                {match.split(" (")[1]}
-                              </span>
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h4 className="font-medium mb-2">Project Matches</h4>
-                      <ul className="space-y-3">
-                        {response.relevance_analysis.project_matches.map(
-                          (match, i) => (
-                            <li
-                              key={i}
-                              className="flex items-center justify-between text-sm"
-                            >
-                              <span>{match.split(" (")[0]}</span>
-                              <span className="text-blue-600">
-                                {match.split(" (")[1]}
-                              </span>
-                            </li>
-                          )
-                        )}
-                      </ul>
-                    </div>
-                  </div>
+                <AnalysisSection title="Strengths" icon={<FiThumbsUp />}>
+                  <ul className="space-y-3">
+                    {response.analysis.strengths.map((strength, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 p-3 bg-green-50 rounded-lg"
+                      >
+                        <div className="flex-shrink-0 mt-1 text-green-600">
+                          <FiThumbsUp className="w-4 h-4" />
+                        </div>
+                        <div className="text-sm text-green-800">{strength}</div>
+                      </li>
+                    ))}
+                  </ul>
                 </AnalysisSection>
 
-                <AnalysisSection title="Skill Gaps" icon={<FiTool />}>
+                <AnalysisSection title="Weaknesses" icon={<FiAlertTriangle />}>
                   <ul className="space-y-3">
-                    {response.relevance_analysis.skill_gaps.map((gap, i) => (
-                      <li key={i} className="text-sm p-3 bg-red-50 rounded-lg">
-                        <div className="font-medium text-red-700">
-                          {gap.split(": ")[0]}
+                    {response.analysis.weaknesses.map((weakness, i) => (
+                      <li
+                        key={i}
+                        className="flex items-start gap-3 p-3 bg-red-50 rounded-lg"
+                      >
+                        <div className="flex-shrink-0 mt-1 text-red-600">
+                          <FiAlertTriangle className="w-4 h-4" />
                         </div>
-                        <div className="text-red-600">{gap.split(": ")[1]}</div>
+                        <div className="text-sm text-red-800">{weakness}</div>
                       </li>
                     ))}
                   </ul>
@@ -407,50 +305,25 @@ export default function ResumeOptimizer() {
               </div>
             )}
 
-            {activeTab === "suggestions" && (
-              <div className="grid gap-6 md:grid-cols-2">
-                <AnalysisSection title="Skill Development" icon={<FiTool />}>
-                  <ul className="space-y-3">
-                    {response.career_development.skills_to_learn.map(
-                      (skill, i) => (
+            {activeTab === "recommendations" && (
+              <div className="grid gap-6">
+                <AnalysisSection
+                  title="Improvement Recommendations"
+                  icon={<FiZap />}
+                >
+                  <ul className="space-y-4">
+                    {response.analysis.recommendations.map(
+                      (recommendation, i) => (
                         <li
                           key={i}
-                          className="flex items-center gap-3 text-sm p-3 bg-blue-50 rounded-lg"
+                          className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg"
                         >
-                          <div className="h-2 w-2 bg-blue-600 rounded-full" />
-                          {skill}
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </AnalysisSection>
-
-                <AnalysisSection title="Project Ideas" icon={<FiTool />}>
-                  <ul className="space-y-3">
-                    {response.career_development.project_ideas.map(
-                      (idea, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center gap-3 text-sm p-3 bg-green-50 rounded-lg"
-                        >
-                          <div className="h-2 w-2 bg-green-600 rounded-full" />
-                          {idea}
-                        </li>
-                      )
-                    )}
-                  </ul>
-                </AnalysisSection>
-
-                <AnalysisSection title="Certifications" icon={<FiTool />}>
-                  <ul className="space-y-3">
-                    {response.career_development.certifications.map(
-                      (cert, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center gap-3 text-sm p-3 bg-purple-50 rounded-lg"
-                        >
-                          <div className="h-2 w-2 bg-purple-600 rounded-full" />
-                          {cert}
+                          <div className="flex-shrink-0 mt-1 text-blue-600">
+                            <FiZap className="w-5 h-5" />
+                          </div>
+                          <div className="text-sm text-gray-800">
+                            {recommendation}
+                          </div>
                         </li>
                       )
                     )}
