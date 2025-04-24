@@ -59,7 +59,7 @@ export default function LearningPathwaysPage() {
     const token =
       session?.user?.accessToken ??
       // NextAuth by default returns id_token in session.user.id_token
-      (session?.user as any)?.id_token;
+      session?.user?.id_token;
 
     if (!token) {
       setError("You must be logged in to generate a pathway.");
