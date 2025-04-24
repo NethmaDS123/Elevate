@@ -50,7 +50,7 @@ export default function AboutSection() {
             Bridging the Academic-Industry Divide
           </h2>
           <p className="text-lg text-gray-400 max-w-3xl mx-auto">
-            At Elevate, we're transforming tech career development through
+            At Elevate, we&apos;re transforming tech career development through
             integrated AI solutions that close the critical gap between academic
             preparation and industry demands.
           </p>

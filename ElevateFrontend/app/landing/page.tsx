@@ -2,7 +2,6 @@
 
 import Hero from "./components/Hero";
 import Features from "./components/Features";
-import Benefits from "./components/Benefits";
 import Navbar from "@/components/Navbar";
 import HowItWorks from "./components/HowitWorks";
 import AboutUs from "./components/AboutUs";

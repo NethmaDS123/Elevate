@@ -52,7 +52,7 @@ export default function Benefits() {
           </h2>
           <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-4">
             Leverage cutting-edge technology to gain a competitive edge in
-            today's dynamic job market
+            today&apos;s dynamic job market
           </p>
         </motion.div>
 
