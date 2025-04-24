@@ -1,68 +1,73 @@
-"use client"; // Ensures client-side rendering
+// components/Hero.tsx (Enhanced)
+"use client";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion"; // For animations
+import { motion } from "framer-motion";
+import { ShieldCheckIcon } from "@heroicons/react/24/outline";
 
 export default function Hero() {
   const router = useRouter();
 
   return (
-    <section className="relative bg-gradient-to-br from-white via-gray-100 to-gray-50 text-black overflow-hidden h-[90vh] flex items-center">
-      {/* Animated Gradient Background */}
-      <div
-        className="absolute inset-0 bg-[url('/assets/hero-bg-pattern.svg')] bg-no-repeat bg-center bg-cover opacity-10 animate-moveBackground"
-        aria-hidden="true"
-      ></div>
+    <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden h-screen flex items-center">
+      <div className="absolute inset-0 opacity-5 [background-image:linear-gradient(to_right,#4a556012_1px,transparent_1px),linear-gradient(to_bottom,#4a556012_1px,transparent_1px)] bg-[size:48px_48px]" />
 
-      {/* Blurred Decorative Elements */}
-      <div
-        className="absolute -top-16 -left-16 w-96 h-96 bg-blue-500 blur-[120px] opacity-20 z-0 animate-float"
-        aria-hidden="true"
-      ></div>
-      <div
-        className="absolute -bottom-16 -right-16 w-96 h-96 bg-purple-500 blur-[120px] opacity-20 z-0 animate-floatDelay"
-        aria-hidden="true"
-      ></div>
-
-      {/* Content Container */}
       <div className="container mx-auto relative z-10 px-6 text-center">
-        {/* Headline with Animation */}
         <motion.h1
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-6xl md:text-7xl lg:text-5xl font-extrabold leading-tight tracking-tighter"
+          className="text-5xl md:text-7xl font-extrabold leading-tight mb-6"
         >
-          Unlock your{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">
-            Career Potential
+          Transform Your
+          <span className="block mt-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
+            Career Trajectory
           </span>
         </motion.h1>
 
-        {/* Subtitle with Animation */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="mt-6 text-lg md:text-xl lg:text-2xl text-gray-700 max-w-3xl mx-auto"
+          className="mt-6 text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto"
         >
-          Empower your career with cutting-edge tools, flexible pathways, and
-          tailored guidance designed to help you succeed.
+          Harness AI-powered tools to optimize your resume, develop in-demand
+          skills, and accelerate your professional growth.
         </motion.p>
 
-        {/* Call-to-Action Buttons with Animation */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-10 flex flex-col md:flex-row gap-4 justify-center"
+          className="mt-12 flex flex-col md:flex-row gap-6 justify-center"
         >
           <button
             onClick={() => router.push("/signin")}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white py-4 px-14 rounded-full text-lg font-semibold shadow-lg transition-all hover:scale-105 focus:ring-4 focus:ring-blue-300 focus:outline-none"
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white py-5 px-16 rounded-xl text-lg font-semibold shadow-2xl hover:shadow-purple-500/20 transition-all duration-300"
           >
-            Get Started for Free
+            Start Your Journey
           </button>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1 }}
+          className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-400"
+        >
+          <ShieldCheckIcon className="h-5 w-5 text-purple-400" />
+          <span>
+            Supported by{" "}
+            <span className="font-semibold text-gray-300">Ignite Fund</span>{" "}
+            innovators
+          </span>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1.2 }}
+          className="mt-6 text-sm text-gray-500 max-w-2xl mx-auto"
+        ></motion.div>
       </div>
     </section>
   );

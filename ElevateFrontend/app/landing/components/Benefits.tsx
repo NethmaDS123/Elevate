@@ -1,3 +1,4 @@
+// components/Benefits.tsx (Enhanced)
 "use client";
 import { motion } from "framer-motion";
 import {
@@ -10,34 +11,34 @@ import {
 export default function Benefits() {
   const benefits = [
     {
-      title: "Time-Saving",
-      description: "Get actionable insights in minutes, not hours",
+      title: "Time Optimization",
+      description: "Reduce job search time with AI-powered automation",
       icon: ClockIcon,
-      color: "text-purple-600",
+      color: "text-purple-400",
     },
     {
-      title: "Personalized Insights",
-      description: "Tailored recommendations for your career stage",
+      title: "Personalized Roadmaps",
+      description: "Custom career paths based on your unique profile",
       icon: UserCircleIcon,
-      color: "text-blue-600",
+      color: "text-blue-400",
     },
     {
-      title: "Comprehensive Support",
-      description: "End-to-end career development platform",
+      title: "Skill Analytics",
+      description: "Real-time analysis of your technical competencies",
       icon: PuzzlePieceIcon,
-      color: "text-green-600",
+      color: "text-green-400",
     },
     {
-      title: "AI-Powered Tools",
-      description: "Cutting-edge technology for competitive edge",
+      title: "AI Mentor",
+      description: "24/7 guidance from our intelligent career assistant",
       icon: CpuChipIcon,
-      color: "text-pink-600",
+      color: "text-pink-400",
     },
   ];
 
   return (
-    <section className="relative py-20 bg-gray-50 overflow-hidden">
-      <div className="absolute inset-0 opacity-10 [background:radial-gradient(theme(colors.gray.400),theme(colors.gray.50))]" />
+    <section className="relative py-20 bg-gray-900 border-t border-gray-800">
+      <div className="absolute inset-0 opacity-10 [background:radial-gradient(theme(colors.purple.500),transparent_70%)]" />
 
       <div className="relative max-w-7xl mx-auto px-4">
         <motion.div
@@ -47,15 +48,15 @@ export default function Benefits() {
           className="text-center mb-16"
         >
           <h2 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
-            Elevate Your Advantage
+            Strategic Advantages
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Transform your career trajectory with intelligent tools designed for
-            modern professionals
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-4">
+            Leverage cutting-edge technology to gain a competitive edge in
+            today's dynamic job market
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {benefits.map((benefit, index) => {
             const Icon = benefit.icon;
             return (
@@ -64,27 +65,25 @@ export default function Benefits() {
                 initial={{ opacity: 0, scale: 0.9 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                whileHover={{ y: -5 }}
+                whileHover={{ y: -10 }}
                 className="group relative"
               >
-                <div className="absolute inset-0 rounded-2xl bg-white shadow-lg transition-all duration-300 ease-out group-hover:shadow-xl" />
+                <div className="absolute inset-0 bg-gray-800 rounded-3xl transform group-hover:scale-105 transition-all duration-300 ease-out opacity-0 group-hover:opacity-100" />
 
-                <div className="relative p-8 h-full">
-                  <div
-                    className={`mb-6 transition-colors duration-300 ${benefit.color}`}
-                  >
+                <div className="relative p-8 h-full bg-gray-800/50 backdrop-blur-lg rounded-2xl border border-gray-700 group-hover:border-purple-500 transition-all">
+                  <div className={`mb-6 ${benefit.color} transition-colors`}>
                     <Icon className="h-12 w-12" />
                   </div>
 
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                  <h3 className="text-xl font-bold text-white mb-3">
                     {benefit.title}
                   </h3>
-                  <p className="text-gray-600 leading-relaxed">
+                  <p className="text-gray-400 leading-relaxed mb-6">
                     {benefit.description}
                   </p>
 
-                  <div className="mt-6">
-                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="absolute bottom-6 left-8 right-8">
+                    <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         whileInView={{ width: "100%" }}
@@ -101,18 +100,6 @@ export default function Benefits() {
             );
           })}
         </div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-lg text-gray-600 italic">
-            &quot;The average user saves 12+ hours per week while improving
-            their interview success rate&quot;
-          </p>
-        </motion.div>
       </div>
     </section>
   );

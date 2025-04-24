@@ -47,9 +47,9 @@ const features = [
     icon: ArrowsRightLeftIcon,
   },
   {
-    title: "Profile Improvement",
+    title: "Skill Gap Analysis",
     description:
-      "Real-time profile optimization based on target job descriptions and market trends.",
+      "Comparing your skills with the ideal candidate, market demands, identifying gaps, and suggesting resources.",
     gradient: "from-gray-600 to-slate-400",
     icon: CommandLineIcon,
   },
