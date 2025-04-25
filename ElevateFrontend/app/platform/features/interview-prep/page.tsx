@@ -234,10 +234,10 @@ const behavioralQuestionExplanations: { [key: string]: string } = {
 };
 
 const starMethodExplanation = `The STAR method is a structured manner of responding to behavioral interview questions by discussing the:
-  - **Situation**: Set the context and describe the background.
-  - **Task**: Explain the task or challenge that was involved.
-  - **Action**: Describe the specific actions you took to address it.
-  - **Result**: Share the outcomes or results of your actions, quantifying your success when possible.
+  - Situation: Set the context and describe the background.
+  - Task: Explain the task or challenge that was involved.
+  - Action: Describe the specific actions you took to address it.
+  - Result: Share the outcomes or results of your actions, quantifying your success when possible.
   This approach helps in delivering clear and concise answers.`;
 
 // ------------------
@@ -976,7 +976,12 @@ export default function InterviewPreparation() {
             },
           }
         );
-        setAnalysis(res.data);
+        setAnalysis(res.data.analysis);
+        const raw = res.data.analysis;
+        setAnalysis({
+          question: raw.question,
+          analysis: raw,
+        });
       } catch (err: unknown) {
         console.error("Error analyzing question:", err);
         setError("Failed to analyze question. Please try again.");
@@ -1001,7 +1006,8 @@ export default function InterviewPreparation() {
         "https://elevatebackend.onrender.com";
       const res = await axios.post(
         `${backendUrl}/feedback`,
-        { question: analysis?.question, user_answer: userAnswer },
+        // now analysis.question is defined
+        { question: analysis!.question, user_answer: userAnswer },
         {
           headers: {
             Authorization: `Bearer ${session.user.id_token}`,
@@ -1009,7 +1015,7 @@ export default function InterviewPreparation() {
           },
         }
       );
-      setFeedback(res.data);
+      setFeedback(res.data.feedback);
     } catch (err: unknown) {
       console.error("Error submitting answer:", err);
       setError("Failed to get feedback. Please try again.");
