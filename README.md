@@ -64,5 +64,3 @@ Elevate closes this gap by unifying resume optimization, skill benchmarking, pro
 Elevate brings all these capabilities under one roof—powered by AI—so you can sharpen your skills, boost your profile, and confidently step into your next software engineering role.
 
 ---
-# Elevate
-# Elevate
