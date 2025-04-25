@@ -77,7 +77,8 @@ export default function ProblemSection() {
         >
           <div className="bg-gray-800/50 backdrop-blur-lg p-8 rounded-2xl border border-purple-500/20 inline-block">
             <p className="text-xl text-gray-300 mb-4">
-              "83% of CS graduates feel unprepared for technical interviews*"
+              &quot83% of CS graduates feel unprepared for technical
+              interviews&quot
             </p>
             <p className="text-sm text-gray-500">
               *2023 Tech Career Preparedness Survey

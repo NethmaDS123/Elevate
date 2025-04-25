@@ -6,7 +6,6 @@ import {
   FiTarget,
   FiLayers,
   FiClock,
-  FiUserCheck,
   FiBarChart2,
 } from "react-icons/fi";
 
