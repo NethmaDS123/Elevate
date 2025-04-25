@@ -4,23 +4,27 @@ import Hero from "./components/Hero";
 import Features from "./components/Features";
 import Navbar from "@/components/Navbar";
 import HowItWorks from "./components/HowitWorks";
-import AboutUs from "./components/AboutUs";
+import SolutionSection from "./components/SolutionSection";
+import TheProblem from "./components/TheProblem";
 
 export default function LandingPage() {
   return (
     <div>
       <Navbar />
-      <div id="hero">
+      <div id="home">
         <Hero />
       </div>
       <div id="features">
         <Features />
       </div>
-      <div id="how-it-works">
+      <div id="steps">
         <HowItWorks />
       </div>
-      <div id="about-us">
-        <AboutUs />
+      <div id="problem">
+        <TheProblem />
+      </div>
+      <div id="solution">
+        <SolutionSection />
       </div>
     </div>
   );

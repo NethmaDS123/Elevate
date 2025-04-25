@@ -16,11 +16,11 @@ export default function Hero() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-5xl md:text-7xl font-extrabold leading-tight mb-6"
+          className="text-5xl md:text-6xl font-extrabold leading-tight mb-6"
         >
           Transform Your
           <span className="block mt-4 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
-            Career Trajectory
+            Tech Career
           </span>
         </motion.h1>
 
@@ -30,8 +30,8 @@ export default function Hero() {
           transition={{ duration: 0.8, delay: 0.4 }}
           className="mt-6 text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto"
         >
-          Harness AI-powered tools to optimize your resume, develop in-demand
-          skills, and accelerate your professional growth.
+          Harness AI-powered tools to help guide, develop in-demand skills, and
+          accelerate your professional growth in the tech industry.
         </motion.p>
 
         <motion.div

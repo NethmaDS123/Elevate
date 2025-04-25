@@ -14,7 +14,7 @@ const features = [
   {
     title: "Resume Optimization",
     description:
-      "AI-powered resume analysis with keyword optimization, ATS compatibility checks, and format enhancement.",
+      "AI-powered resume analysis with keyword optimization, ATS compatibility checks, and format enhancement according to a job description.",
     gradient: "from-purple-600 to-blue-500",
     icon: DocumentTextIcon,
   },
@@ -28,21 +28,20 @@ const features = [
   {
     title: "Learning Pathways",
     description:
-      "Personalized learning tracks with curated resources and milestone tracking for skill mastery.",
+      "Personalized learning tracks with curated resources for technical subjects.",
     gradient: "from-green-500 to-lime-400",
     icon: AcademicCapIcon,
   },
   {
     title: "Interview Preparation",
     description:
-      "Dynamic interview simulator with adaptive questions, coding challenges, and performance analytics.",
+      "Technical and Behavioral interview preperation tool to help ace your job interviews.",
     gradient: "from-pink-500 to-rose-400",
     icon: ChatBubbleLeftRightIcon,
   },
   {
     title: "Role Transition",
-    description:
-      "Strategic career pivot planner with skill gap analysis and transition roadmap.",
+    description: "Strategic career pivot planner with transition roadmaps.",
     gradient: "from-orange-500 to-amber-400",
     icon: ArrowsRightLeftIcon,
   },

@@ -31,21 +31,23 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
           <div className="flex space-x-6">
-            {["Home", "Features", "Benefits"].map((item) => (
-              <button
-                key={item}
-                onClick={() => handleScroll(item.toLowerCase())}
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-lg
+            {["Home", "Features", "Steps", "Problem", "Solution"].map(
+              (item) => (
+                <button
+                  key={item}
+                  onClick={() => handleScroll(item.toLowerCase())}
+                  className="text-gray-300 hover:text-white px-3 py-2 rounded-lg
                          transition-all duration-300 hover:bg-gray-800/50
                          relative group"
-              >
-                {item}
-                <span
-                  className="absolute bottom-0 left-0 w-0 h-[2px] bg-purple-400 
+                >
+                  {item}
+                  <span
+                    className="absolute bottom-0 left-0 w-0 h-[2px] bg-purple-400 
                                transition-all duration-300 group-hover:w-full"
-                />
-              </button>
-            ))}
+                  />
+                </button>
+              )
+            )}
           </div>
 
           <div className="h-6 w-px bg-gray-700 mx-4" />
@@ -120,43 +122,38 @@ export default function Navbar() {
             className="md:hidden bg-gray-900/95 backdrop-blur-lg border-b border-gray-800"
           >
             <div className="container mx-auto px-6 py-4">
-              {["Home", "Features", "Benefits", "How It Works"].map((item) => (
-                <button
-                  key={item}
-                  onClick={() =>
-                    handleScroll(item.toLowerCase().replace(" ", "-"))
-                  }
-                  className="w-full py-4 text-gray-300 hover:text-white 
+              {["Home", "Features", "Steps", "The Problem", "The Solution"].map(
+                (item) => (
+                  <button
+                    key={item}
+                    onClick={() =>
+                      handleScroll(item.toLowerCase().replace(" ", "-"))
+                    }
+                    className="w-full py-4 text-gray-300 hover:text-white 
                            transition-colors duration-300 border-b border-gray-800
                            last:border-0 flex items-center justify-between"
-                >
-                  <span>{item}</span>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              ))}
+                    <span>{item}</span>
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )
+              )}
 
               <div className="mt-6 space-y-4">
                 <button
                   onClick={() => router.push("/signin")}
-                  className="w-full py-3 bg-gray-800 hover:bg-gray-700/80 text-white rounded-lg
-                           transition-all duration-300"
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => router.push("/platform/features/dashboard")}
                   className="w-full py-3 bg-gradient-to-r from-purple-500 to-blue-500 
                            hover:from-purple-600 hover:to-blue-600 text-white rounded-lg
                            transition-all duration-300 shadow-lg hover:shadow-purple-500/20"
