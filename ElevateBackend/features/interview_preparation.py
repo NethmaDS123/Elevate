@@ -1,24 +1,23 @@
-# interviewpreparation.py
-import google.generativeai as genai
-from dotenv import load_dotenv
+# features/interview_preparation.py
 import os
 import re
 import json
-from database import store_interview_analysis, store_interview_feedback
+import openai
+from dotenv import load_dotenv
 from datetime import datetime, UTC
+from database import store_interview_analysis, store_interview_feedback
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Configure Gemini API key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables!")
+# Configure OpenAI API key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY not found in environment variables!")
+openai.api_key = OPENAI_API_KEY
 
-genai.configure(api_key=GEMINI_API_KEY)
-
-# Gemini Model Initialization
-model = genai.GenerativeModel('gemini-1.5-flash')
+# You can change to "gpt-4" or another model as needed
+DEFAULT_MODEL = "gpt-4o"
 
 class InterviewPreparation:
     @staticmethod
@@ -79,24 +78,32 @@ class InterviewPreparation:
         JSON Response:
         """
         try:
-            response = model.generate_content(prompt)
-            result = response.text.strip()
-            # Use regex to extract JSON from markdown formatting if necessary
-            json_match = re.search(r"```json\n(.*)\n```", result, re.DOTALL)
-            json_str = json_match.group(1).strip() if json_match else result
-            analysis_result = json.loads(json_str)
-            # Store the successful analysis in the database
+            resp = openai.chat.completions.create(
+                model=DEFAULT_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0
+            )
+            raw = resp.choices[0].message.content.strip()
+        except Exception as e:
+            err = {"error": f"OpenAI API error: {e}"}
             store_interview_analysis(user_id, {
                 "question": question,
-                "analysis": analysis_result,
+                "analysis": err,
                 "timestamp": datetime.now(UTC)
             })
-            return analysis_result
+            return err
+
+        # Extract JSON block
+        json_match = re.search(r"```json\s*(\{[\s\S]*\})\s*```", raw)
+        json_str = json_match.group(1).strip() if json_match else raw
+
+        # Parse JSON
+        try:
+            analysis_result = json.loads(json_str)
         except json.JSONDecodeError as e:
-            # If parsing fails, store the raw response and error
             error_result = {
-                "error": f"JSON parsing error: {str(e)}",
-                "raw_response": result
+                "error": f"JSON parsing error: {e}",
+                "raw_response": raw
             }
             store_interview_analysis(user_id, {
                 "question": question,
@@ -104,14 +111,14 @@ class InterviewPreparation:
                 "timestamp": datetime.now(UTC)
             })
             return error_result
-        except Exception as e:
-            error_result = {"error": f"General error: {str(e)}"}
-            store_interview_analysis(user_id, {
-                "question": question,
-                "analysis": error_result,
-                "timestamp": datetime.now(UTC)
-            })
-            return error_result
+
+        # Persist successful analysis
+        store_interview_analysis(user_id, {
+            "question": question,
+            "analysis": analysis_result,
+            "timestamp": datetime.now(UTC)
+        })
+        return analysis_result
 
     @staticmethod
     def feedback_on_answer(user_id: str, question: str, user_answer: str) -> dict:
@@ -166,29 +173,34 @@ class InterviewPreparation:
         JSON Response:
         """
         try:
-            response = model.generate_content(prompt)
-            result = response.text.strip()
-            json_match = re.search(r"```json\n(.*)\n```", result, re.DOTALL)
-            json_str = json_match.group(1).strip() if json_match else result
-            feedback_result = json.loads(json_str)
-            store_interview_feedback(user_id, {
-                "question": question,
-                "user_answer": user_answer,
-                "feedback": feedback_result,
-                "timestamp": datetime.now(UTC)
-            })
-            return feedback_result
-        except json.JSONDecodeError as e:
-            feedback_error = {"error": f"JSON parsing error: {str(e)}", "raw_response": result}
-            store_interview_feedback(user_id, {
-                "question": question,
-                "user_answer": user_answer,
-                "feedback": feedback_error,
-                "timestamp": datetime.now(UTC)
-            })
-            return feedback_error
+            resp = openai.chat.completions.create(
+                model=DEFAULT_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0
+            )
+            raw = resp.choices[0].message.content.strip()
         except Exception as e:
-            feedback_error = {"error": f"General error: {str(e)}"}
+            err = {"error": f"OpenAI API error: {e}"}
+            store_interview_feedback(user_id, {
+                "question": question,
+                "user_answer": user_answer,
+                "feedback": err,
+                "timestamp": datetime.now(UTC)
+            })
+            return err
+
+        # Extract JSON block
+        json_match = re.search(r"```json\s*(\{[\s\S]*\})\s*```", raw)
+        json_str = json_match.group(1).strip() if json_match else raw
+
+        # Parse JSON
+        try:
+            feedback_result = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            feedback_error = {
+                "error": f"JSON parsing error: {e}",
+                "raw_response": raw
+            }
             store_interview_feedback(user_id, {
                 "question": question,
                 "user_answer": user_answer,
@@ -196,3 +208,12 @@ class InterviewPreparation:
                 "timestamp": datetime.now(UTC)
             })
             return feedback_error
+
+        # Persist successful feedback
+        store_interview_feedback(user_id, {
+            "question": question,
+            "user_answer": user_answer,
+            "feedback": feedback_result,
+            "timestamp": datetime.now(UTC)
+        })
+        return feedback_result

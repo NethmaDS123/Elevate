@@ -1,10 +1,11 @@
 import re
-import google.generativeai as genai
-from dotenv import load_dotenv
-import os
 import json
+import os
 import logging
 from datetime import datetime, UTC
+
+import google.generativeai as genai
+from dotenv import load_dotenv
 from database import store_user_feature
 
 # Configure logging
@@ -123,11 +124,18 @@ class SkillBenchmark:
         logger.info(f"Sending prompt to Gemini (size: {len(prompt)} chars)")
         model = genai.GenerativeModel(self.model_name)
         resp = model.generate_content(prompt)
+
+        # Clean out any markdown fencing
         cleaned = self._clean_response(resp.text)
+
+        # Strip any stray C0 control chars (0x00–0x1F, except standard whitespace: tab, newline, carriage return)
+        sanitized = re.sub(r'[^\x09\x0A\x0D\x20-\x7E]', '', cleaned)
+
         try:
-            return json.loads(cleaned)
+            # Allow control characters inside strings on Python ≥3.9
+            return json.loads(sanitized, strict=False)
         except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing failed: {e}\nResponse was:\n{cleaned}")
+            logger.error(f"JSON parsing failed after sanitization: {e}\nSanitized response was:\n{sanitized}")
             raise RuntimeError(f"Gemini JSON parse error: {e}")
 
     def run(self, user_id: str, entry_id: str, resume_text: str, domain: str, target_role_level: str) -> dict:

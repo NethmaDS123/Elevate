@@ -422,27 +422,40 @@ async def role_transition(
     authorization: str = Header(None),
 ):
     if not authorization:
-         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing authentication token.")
+         raise HTTPException(
+             status_code=status.HTTP_401_UNAUTHORIZED,
+             detail="Missing authentication token."
+         )
     token = authorization.split("Bearer ")[-1]
     try:
         user_info = verify_google_token(token)
         user_id = user_info["sub"]
     except Exception:
-         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Google authentication token")
+         raise HTTPException(
+             status_code=status.HTTP_401_UNAUTHORIZED,
+             detail="Invalid Google authentication token"
+         )
 
     body = await request.json()
-    current = body.get("currentRole")
-    target = body.get("targetRole")
+    current     = body.get("currentRole")
+    target      = body.get("targetRole")
+    resume_text = body.get("resume_text")      # ← new
+
     if not current or not target:
-       raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Both currentRole and targetRole are required.")
+       raise HTTPException(
+           status_code=status.HTTP_400_BAD_REQUEST,
+           detail="Both currentRole and targetRole are required."
+       )
 
     plan_id = str(uuid.uuid4())
     ts = datetime.now(UTC)
-    # initial store
+
+    # Initial store (status=processing)
     store_role_transition(user_id, {
         "plan_id": plan_id,
         "currentRole": current,
         "targetRole": target,
+        "resume_text": resume_text,            # ← store snapshot
         "status": "processing",
         "createdAt": ts,
         "updatedAt": ts
@@ -450,17 +463,23 @@ async def role_transition(
 
     async with semaphore:
         try:
+            # Pass résumé through to generate_plan()
             plan = await asyncio.get_event_loop().run_in_executor(
                 None,
-                role_transition_instance.generate_plan, user_id, current, target
+                role_transition_instance.generate_plan,
+                user_id,
+                current,
+                target,
+                resume_text                      # ← new
             )
-            # update to completed
+
+            # Mark completed in user's document
             users_collection.update_one(
                 {"_id": user_id, "features.roleTransition.plan_id": plan_id},
                 {"$set": {
-                    "features.roleTransition.$.status": "completed",
-                    "features.roleTransition.$.plan": plan,
-                    "features.roleTransition.$.updatedAt": datetime.now(UTC)
+                    "features.roleTransition.$.status":     "completed",
+                    "features.roleTransition.$.plan":       plan,
+                    "features.roleTransition.$.updatedAt":  datetime.now(UTC)
                 }}
             )
             return {"plan": plan, "plan_id": plan_id}
@@ -469,13 +488,15 @@ async def role_transition(
             users_collection.update_one(
                 {"_id": user_id, "features.roleTransition.plan_id": plan_id},
                 {"$set": {
-                    "features.roleTransition.$.status": "failed",
-                    "features.roleTransition.$.error": str(e),
+                    "features.roleTransition.$.status":    "failed",
+                    "features.roleTransition.$.error":     str(e),
                     "features.roleTransition.$.updatedAt": datetime.now(UTC)
                 }}
             )
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
 
 # ----------------
 # Skill Benchmark & Gap Analysis Endpoint
