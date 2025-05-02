@@ -20,12 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Frontend: Next.js + TS + Tailwind
+      # Frontend
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
-
       - name: Install & Test Frontend
         working-directory: ./ElevateFrontend
         run: |
@@ -35,16 +34,15 @@ jobs:
           npm test -- --ci
           npm run build
 
-      # Backend: FastAPI + Python + MongoDB
+      # Backend
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: 3.11
-
       - name: Install & Test Backend
         working-directory: ./ElevateBackend
         env:
-          MONGODB_URI: mongodb+srv://dsnethma:eh2SrcppLJJYO6gP@elevatecluster.ao9i3.mongodb.net/?retryWrites=true&w=majority&appName=ElevateCluster
+          MONGODB_URI: mongodb://localhost:27017/test_db
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
@@ -56,14 +54,26 @@ jobs:
     needs: build-and-test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
     steps:
       - uses: actions/checkout@v4
 
-      # Replace these echos with your real deploy commands
-      - name: Deploy Frontend
+      # Frontend → Vercel
+      - name: Install Vercel CLI
+        run: npm install -g vercel
         working-directory: ./ElevateFrontend
-        run: echo "→ your Vercel/Netlify deploy here"
 
-      - name: Deploy Backend
-        working-directory: ./ElevateBackend
-        run: echo "→ your Docker/Heroku/etc. deploy here"
+      - name: Deploy Frontend to Vercel
+        working-directory: ./ElevateFrontend
+        run: |
+          vercel --prod --confirm
+
+      # Backend → Render
+      - name: Trigger Render Web Service Deploy
+        run: |
+          curl -X POST https://api.render.com/deploy/${{ env.RENDER_SERVICE_ID }} \
+            -H "Accept: application/json" \
+            -H "Authorization: Bearer ${{ env.RENDER_API_KEY }}"
