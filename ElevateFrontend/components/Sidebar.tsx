@@ -9,7 +9,6 @@ import {
   FiFileText,
   FiClipboard,
   FiBookOpen,
-  FiUser,
   FiArrowLeft,
   FiCheckCircle,
   FiArrowUpRight,
