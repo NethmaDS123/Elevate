@@ -97,13 +97,6 @@ export default function Sidebar() {
           isOpen={isOpen}
           isActive={pathname === "/platform/features/role-transition"}
         />
-        <SidebarLink
-          href="/platform/profile"
-          icon={<FiUser />}
-          label="Profile"
-          isOpen={isOpen}
-          isActive={pathname === "/platform/profile"}
-        />
 
         <div className="pt-4 mt-4 border-t border-gray-700">
           <motion.button

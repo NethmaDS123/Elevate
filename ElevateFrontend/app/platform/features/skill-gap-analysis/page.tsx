@@ -45,6 +45,7 @@ interface RoadmapItem {
   actions: string[];
   reasoning: string;
 }
+
 export default function SkillBenchmarking() {
   const { data: session, status } = useSession();
   const [roleLevel, setRoleLevel] = useState("internship");
@@ -61,8 +62,7 @@ export default function SkillBenchmarking() {
     setAnalysis(null);
 
     const backend =
-      process.env.NEXT_PUBLIC_BACKEND_URL ||
-      "https://elevatebackend.onrender.com";
+      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
     try {
       const response = await fetch(`${backend}/skill_benchmark`, {
@@ -191,29 +191,35 @@ export default function SkillBenchmarking() {
           <section className="mt-8">
             <h2 className="font-bold text-2xl">🚀 Strategic Career Roadmap</h2>
             {["short_term_goals", "medium_term_goals", "long_term_goals"].map(
-              (phase) => (
-                <div key={phase} className="mt-4">
-                  <h3 className="font-semibold capitalize">
-                    {phase.replace(/_/g, " ")}
-                  </h3>
-                  {analysis.strategic_roadmap[
+              (phase) => {
+                // Safely get the array, defaulting to empty if undefined
+                const items =
+                  analysis.strategic_roadmap[
                     phase as keyof typeof analysis.strategic_roadmap
-                  ].map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-blue-50 p-4 rounded shadow mb-3"
-                    >
-                      <strong>{item.goal}</strong> ({item.timeframe})
-                      <ul className="list-disc ml-4">
-                        {item.actions.map((act, aIdx) => (
-                          <li key={aIdx}>{act}</li>
-                        ))}
-                      </ul>
-                      <p>{item.reasoning}</p>
-                    </div>
-                  ))}
-                </div>
-              )
+                  ] ?? [];
+
+                return (
+                  <div key={phase} className="mt-4">
+                    <h3 className="font-semibold capitalize">
+                      {phase.replace(/_/g, " ")}
+                    </h3>
+                    {items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-blue-50 p-4 rounded shadow mb-3"
+                      >
+                        <strong>{item.goal}</strong> ({item.timeframe})
+                        <ul className="list-disc ml-4">
+                          {item.actions.map((act, aIdx) => (
+                            <li key={aIdx}>{act}</li>
+                          ))}
+                        </ul>
+                        <p>{item.reasoning}</p>
+                      </div>
+                    ))}
+                  </div>
+                );
+              }
             )}
           </section>
 
