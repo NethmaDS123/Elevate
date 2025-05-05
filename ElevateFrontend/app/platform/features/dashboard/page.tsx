@@ -162,7 +162,7 @@ export default function DashboardPage() {
           ...json,
           learningPaths: mappedLP,
         });
-      } catch (e: any) {
+      } catch (e) {
         console.error("Dashboard fetch error:", e);
         setError("Failed to fetch dashboard");
       } finally {
