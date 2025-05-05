@@ -33,21 +33,20 @@ def store_user_feature(user_id: str, feature: str, data: dict):
     users_collection.update_one({"_id": user_id}, update, upsert=True)
 
 def fetch_latest_feature(user_id: str, feature: str):
-    """
-    Retrieve the most recent entry for the given feature in a user's document,
-    ordered by the entry's timestamp (createdAt or provided timestamp).
-    """
+    
+    #Retrieve the most recent entry for the given feature in a user's document
+    
     user = users_collection.find_one({"_id": user_id}, {f"features.{feature}": 1})
     if not user or "features" not in user or feature not in user["features"]:
         return None
 
     entries = user["features"][feature]
-    # sort by createdAt/updatedAt descending
+    # sorted by createdAt/updatedAt descending
     entries.sort(key=lambda e: e.get("updatedAt", e.get("createdAt", datetime.utcnow())), reverse=True)
     return entries[0] if entries else None
 
 def update_feature_entry(user_id: str, feature: str, entry_id: str, update_data: dict):
-    """Update specific fields on one feature entry by its entry_id."""
+    #Update specific fields on one feature entry by its entry_id.
     update_data["updatedAt"] = datetime.utcnow()
     users_collection.update_one(
         {"_id": user_id, f"features.{feature}.entry_id": entry_id},
@@ -55,7 +54,7 @@ def update_feature_entry(user_id: str, feature: str, entry_id: str, update_data:
     )
 
 
-# Resume Optimization (Feature Name: "resumeOptimizer")
+# Resume Optimization 
 def store_optimization_results(user_id: str, data: dict):
     store_user_feature(user_id, "resumeOptimizer", data)
 
@@ -63,7 +62,7 @@ def fetch_optimization_results(user_id: str):
     return fetch_latest_feature(user_id, "resumeOptimizer")
 
 
-# Project Evaluation (Feature Name: "projectEvaluation")
+# Project Evaluation 
 def store_evaluation_result(user_id: str, data: dict):
     store_user_feature(user_id, "projectEvaluation", data)
 
@@ -71,7 +70,7 @@ def fetch_evaluation_results(user_id: str):
     return fetch_latest_feature(user_id, "projectEvaluation")
 
 
-# Learning Pathways (Feature Name: "learningPathways")
+# Learning Pathways 
 def store_learning_pathway_result(user_id: str, data: dict):
     store_user_feature(user_id, "learningPathways", data)
 
@@ -79,7 +78,7 @@ def fetch_learning_pathway_results(user_id: str):
     return fetch_latest_feature(user_id, "learningPathways")
 
 
-# Interview Analysis (Feature Name: "interviewAnalysis")
+# Interview Analysis
 def store_interview_analysis(user_id: str, data: dict):
     store_user_feature(user_id, "interviewAnalysis", data)
 
@@ -87,7 +86,7 @@ def fetch_interview_analysis(user_id: str):
     return fetch_latest_feature(user_id, "interviewAnalysis")
 
 
-# Interview Feedback (Feature Name: "interviewFeedback")
+# Interview Feedback 
 def store_interview_feedback(user_id: str, data: dict):
     store_user_feature(user_id, "interviewFeedback", data)
 
@@ -95,14 +94,14 @@ def fetch_interview_feedback(user_id: str):
     return fetch_latest_feature(user_id, "interviewFeedback")
 
 
-# Role Transition Guidance (Feature Name: "roleTransition")
+# Role Transition Guidance 
 def store_role_transition(user_id: str, data: dict):
     store_user_feature(user_id, "roleTransition", data)
 
 def fetch_role_transition(user_id: str):
     return fetch_latest_feature(user_id, "roleTransition")
 
-# Skill Benchmarking (Feature Name: "skillBenchmark")
+# Skill Benchmarking
 def store_skill_benchmark(user_id: str, data: dict):
     store_user_feature(user_id, "skillBenchmark", data)
 

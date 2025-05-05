@@ -19,7 +19,6 @@ if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found")
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Pick your model
 MODEL = "gemini-1.5-flash"
 
 
@@ -31,7 +30,7 @@ class RoleTransition:
         target: str,
         resume_text: Optional[str] = None,
     ) -> dict:
-        # If we have a résumé, include it in a fenced block
+        # If user entered a resume, include it in a fenced block
         resume_section = ""
         if resume_text:
             resume_section = (
@@ -119,7 +118,7 @@ Respond STRICTLY in valid JSON. No Markdown formatting.
         json_str = match.group(1) if match else text
         plan = json.loads(json_str)
 
-        # Persist final plan (with résumé snapshot)
+        # Persist final plan (with resume snapshot)
         store_role_transition(user_id, {
             "currentRole": current,
             "targetRole": target,

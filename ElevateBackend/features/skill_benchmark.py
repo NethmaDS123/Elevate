@@ -19,9 +19,11 @@ if not GEMINI_API_KEY:
     raise ValueError("GEMINI_API_KEY not found in environment variables!")
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Prompt template with escaped braces for literal JSON
+# Prompt template 
 SKILL_BENCHMARK_PROMPT = """
-You are an expert career architect and mentor. Given the following resume and targeting the domain "{domain}" for a "{target_role_level}" role, perform a comprehensive benchmarking analysis against ideal elite candidates (e.g., MIT/Stanford students, FAANG interns/employees, ICPC winners, impactful open-source contributors).
+You are an expert career architect and mentor. Given the following resume and targeting the domain "{domain}" for a "{target_role_level}" role, 
+perform a comprehensive benchmarking analysis against ideal elite candidates (e.g., MIT/Stanford students, FAANG interns/employees, ICPC winners, 
+impactful open-source contributors).
 
 Your analysis must explicitly include:
 
@@ -32,11 +34,13 @@ Your analysis must explicitly include:
 2. **Step-by-Step Strategic Career Roadmap**:
    Provide detailed short-term (0-6 months), medium-term (6-18 months), and long-term (18+ months) action plans.
    - Include concrete goals.
-   - Recommend specific projects, resources, hackathons, competitive programming platforms, internships, certifications, and activities to reach elite-level standards.
+   - Recommend specific projects, resources, hackathons, competitive programming platforms, internships, certifications, and activities to reach elite-level 
+   standards.
    - Clearly state why each recommended action is important and how it directly closes identified gaps.
 
 3. **Immediate Resume Enhancements**:
-   Provide concrete examples of how to rewrite or enhance key sections (e.g., Projects, Work Experience) of the provided resume to highlight quantifiable impact aligned with elite standards.
+   Provide concrete examples of how to rewrite or enhance key sections (e.g., Projects, Work Experience) of the provided resume to highlight quantifiable
+   impact aligned with elite standards.
 
 Structure your JSON output exactly as follows:
 
@@ -128,11 +132,11 @@ class SkillBenchmark:
         # Clean out any markdown fencing
         cleaned = self._clean_response(resp.text)
 
-        # Strip any stray C0 control chars (0x00–0x1F, except standard whitespace: tab, newline, carriage return)
+        # Strip any stray C0 control chars 
         sanitized = re.sub(r'[^\x09\x0A\x0D\x20-\x7E]', '', cleaned)
 
         try:
-            # Allow control characters inside strings on Python ≥3.9
+            # Allow control characters inside strings on Python 
             return json.loads(sanitized, strict=False)
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing failed after sanitization: {e}\nSanitized response was:\n{sanitized}")
@@ -152,7 +156,7 @@ class SkillBenchmark:
         # Call Gemini and parse result
         result = self._run_step(prompt)
 
-        # Persist the feature result (include feature name as second arg)
+        # Persist the feature result
         store_user_feature(
             user_id,
             "skill_benchmark",

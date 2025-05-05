@@ -16,7 +16,7 @@ if not OPENAI_API_KEY:
     raise ValueError("OPENAI_API_KEY not found in environment variables!")
 openai.api_key = OPENAI_API_KEY
 
-# You can change to "gpt-4" or another model as needed
+
 DEFAULT_MODEL = "gpt-4o"
 
 class InterviewPreparation:
@@ -78,6 +78,7 @@ class InterviewPreparation:
         JSON Response:
         """
         try:
+            # Send the prompt to the OpenAI API
             resp = openai.chat.completions.create(
                 model=DEFAULT_MODEL,
                 messages=[{"role": "user", "content": prompt}],
@@ -85,6 +86,7 @@ class InterviewPreparation:
             )
             raw = resp.choices[0].message.content.strip()
         except Exception as e:
+            # Handle any errors that occur during the API call
             err = {"error": f"OpenAI API error: {e}"}
             store_interview_analysis(user_id, {
                 "question": question,
@@ -93,14 +95,15 @@ class InterviewPreparation:
             })
             return err
 
-        # Extract JSON block
+        # Extract JSON block from the response
         json_match = re.search(r"```json\s*(\{[\s\S]*\})\s*```", raw)
         json_str = json_match.group(1).strip() if json_match else raw
 
-        # Parse JSON
+        # Parse the extracted JSON
         try:
             analysis_result = json.loads(json_str)
         except json.JSONDecodeError as e:
+            # Handle JSON parsing errors
             error_result = {
                 "error": f"JSON parsing error: {e}",
                 "raw_response": raw
@@ -173,6 +176,7 @@ class InterviewPreparation:
         JSON Response:
         """
         try:
+            # Send the prompt to the OpenAI API
             resp = openai.chat.completions.create(
                 model=DEFAULT_MODEL,
                 messages=[{"role": "user", "content": prompt}],
@@ -180,6 +184,7 @@ class InterviewPreparation:
             )
             raw = resp.choices[0].message.content.strip()
         except Exception as e:
+            # Handle any errors that occur during the API call
             err = {"error": f"OpenAI API error: {e}"}
             store_interview_feedback(user_id, {
                 "question": question,
@@ -189,14 +194,15 @@ class InterviewPreparation:
             })
             return err
 
-        # Extract JSON block
+        # Extract JSON block from the response
         json_match = re.search(r"```json\s*(\{[\s\S]*\})\s*```", raw)
         json_str = json_match.group(1).strip() if json_match else raw
 
-        # Parse JSON
+        # Parse the extracted JSON
         try:
             feedback_result = json.loads(json_str)
         except json.JSONDecodeError as e:
+            # Handle JSON parsing errors
             feedback_error = {
                 "error": f"JSON parsing error: {e}",
                 "raw_response": raw

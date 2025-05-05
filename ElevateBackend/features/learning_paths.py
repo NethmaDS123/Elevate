@@ -12,7 +12,7 @@ from database import store_learning_pathway_result
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# Load and configure
+# Load and configure environment variables
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 if not openai.api_key:
@@ -34,8 +34,7 @@ class LearningPathways:
             "createdAt": now,
             "updatedAt": now
         })
-
-        # 2. Build the prompt
+        
         prompt = f"""
 You are a senior curriculum architect. Produce a **pure JSON** learning pathway for "{topic}" with the following schema:
 
@@ -72,7 +71,7 @@ Fill in this structure with:
 Return **only** the JSON.
 """
 
-        # 3. Call the new v1 API
+        # 3. Call the API to generate the learning pathway
         try:
             logger.info(f"[{user_id}] Calling OpenAI for topic='{topic}'")
             resp = openai.chat.completions.create(
@@ -85,7 +84,7 @@ Return **only** the JSON.
             logger.exception(f"[{user_id}] OpenAI API call failed")
             raise
 
-        # 4. Parse out JSON
+        # 4. Parse out JSON from the response
         raw = resp.choices[0].message.content.strip()
         match = re.search(r"```json\s*(\{[\s\S]+\})\s*```", raw)
         json_str = match.group(1) if match else raw
