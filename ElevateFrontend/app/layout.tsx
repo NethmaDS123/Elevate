@@ -16,9 +16,13 @@ export default function RootLayout({
       <body className=" relative">
         <div className="relative z-10 flex flex-col min-h-screen">
           <SessionProvider>
+            {" "}
+            {/* Session provider for authentication */}
             <main className="flex-grow">
-              {children}
-              <Analytics />
+              {" "}
+              {/* Main content area */}
+              {children} {/* Children components */}
+              <Analytics /> {/* Vercel analytics */}
             </main>
           </SessionProvider>
           <Footer />

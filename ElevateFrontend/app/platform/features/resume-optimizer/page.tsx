@@ -13,8 +13,9 @@ import {
   FiThumbsUp,
   FiAlertTriangle,
   FiZap,
-} from "react-icons/fi";
+} from "react-icons/fi"; // Import icons for UI
 
+// Define interface for OptimizationResponse
 interface OptimizationResponse {
   optimized_resume: string;
   analysis: {
@@ -26,14 +27,15 @@ interface OptimizationResponse {
 }
 
 export default function ResumeOptimizer() {
-  const { data: session, status } = useSession();
-  const [resumeText, setResumeText] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
-  const [response, setResponse] = useState<OptimizationResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState("overview");
+  const { data: session, status } = useSession(); // Use the useSession hook to get the session data and status
+  const [resumeText, setResumeText] = useState(""); // State for the resume text
+  const [jobDescription, setJobDescription] = useState(""); // State for the job description
+  const [response, setResponse] = useState<OptimizationResponse | null>(null); // State for the optimization response
+  const [loading, setLoading] = useState(false); // State for the loading indicator
+  const [error, setError] = useState(""); // State for error messages
+  const [activeTab, setActiveTab] = useState("overview"); // State for the active tab
 
+  // Function to handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -48,7 +50,8 @@ export default function ResumeOptimizer() {
 
     try {
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
 
       const res = await axios.post<OptimizationResponse>(
         `${backendUrl}/optimize_resume`,
@@ -58,7 +61,7 @@ export default function ResumeOptimizer() {
         },
         {
           headers: {
-            Authorization: `Bearer ${session.user.id_token}`,
+            Authorization: `Bearer ${session.user.id_token}`, // Use session token for authorization
             "Content-Type": "application/json",
           },
         }
@@ -73,6 +76,7 @@ export default function ResumeOptimizer() {
     }
   };
 
+  // Check if session is loading
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -81,6 +85,7 @@ export default function ResumeOptimizer() {
     );
   }
 
+  // Check if session is not available
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -91,6 +96,7 @@ export default function ResumeOptimizer() {
     );
   }
 
+  // Function to handle download of optimized resume
   const handleDownload = () => {
     if (!response?.optimized_resume) return;
 
@@ -105,6 +111,7 @@ export default function ResumeOptimizer() {
     URL.revokeObjectURL(url);
   };
 
+  // Component for progress bar
   const ProgressBar = ({ value }: { value: number }) => (
     <div className="w-full bg-gray-200 rounded-full h-2.5">
       <div
@@ -114,6 +121,7 @@ export default function ResumeOptimizer() {
     </div>
   );
 
+  // Component for analysis section
   const AnalysisSection = ({
     title,
     icon,

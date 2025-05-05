@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { ChartBarIcon, AcademicCapIcon } from "@heroicons/react/24/outline";
 
+// Define the structure for the transition plan data
 interface TransitionPlan {
   personalizedSummary: {
     transferableSkills: string[];
@@ -60,17 +61,20 @@ interface TransitionPlan {
   };
 }
 
+// Main component for role transition guidance
 export default function RoleTransitionPage() {
+  // Authentication and state management
   const { data: session, status } = useSession();
   const [currentRole, setCurrentRole] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [resumeText, setResumeText] = useState(""); // ← new
+  const [resumeText, setResumeText] = useState(""); // For storing user's resume
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [transitionPlan, setTransitionPlan] = useState<TransitionPlan | null>(
     null
   );
 
+  // Example role transitions for quick selection
   const exampleTransitions = [
     { current: "Frontend Developer", target: "Tech Lead" },
     { current: "Software Engineer", target: "Engineering Manager" },
@@ -79,10 +83,12 @@ export default function RoleTransitionPage() {
     { current: "QA Engineer", target: "DevOps Engineer" },
   ];
 
+  // Function to fetch transition plan from backend
   const fetchTransitionPlan = async () => {
     setError("");
     setTransitionPlan(null);
 
+    // Validate user session and input
     if (!session?.user?.id_token) {
       setError("You must be logged in to generate a transition plan");
       return;
@@ -98,6 +104,7 @@ export default function RoleTransitionPage() {
         process.env.NEXT_PUBLIC_BACKEND_URL ||
         "https://elevatebackend.onrender.com";
 
+      // Make API request
       const res = await fetch(`${backendUrl}/role_transition`, {
         method: "POST",
         headers: {
@@ -111,6 +118,7 @@ export default function RoleTransitionPage() {
         }),
       });
 
+      // Handle response
       if (!res.ok) {
         const errData = await res.json().catch(() => null);
         throw new Error(errData?.detail || res.statusText);
@@ -127,6 +135,7 @@ export default function RoleTransitionPage() {
     }
   };
 
+  // Loading state UI
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -135,6 +144,7 @@ export default function RoleTransitionPage() {
     );
   }
 
+  // Authentication check UI
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -145,9 +155,11 @@ export default function RoleTransitionPage() {
     );
   }
 
+  // Main component render
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
+        {/* Header section */}
         <header className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Role Transition Guidance
@@ -157,7 +169,9 @@ export default function RoleTransitionPage() {
           </p>
         </header>
 
+        {/* Input form section */}
         <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+          {/* Role input fields */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -185,7 +199,7 @@ export default function RoleTransitionPage() {
             </div>
           </div>
 
-          {/* Résumé input */}
+          {/* Resume input field */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Paste Your Résumé
@@ -199,6 +213,7 @@ export default function RoleTransitionPage() {
             />
           </div>
 
+          {/* Submit button */}
           <button
             onClick={fetchTransitionPlan}
             disabled={loading}
@@ -214,6 +229,7 @@ export default function RoleTransitionPage() {
             )}
           </button>
 
+          {/* Error display */}
           {error && (
             <div className="mt-4 p-4 bg-red-50 rounded-lg flex items-center gap-2">
               <ChartBarIcon className="h-5 w-5 text-red-600" />
@@ -222,6 +238,7 @@ export default function RoleTransitionPage() {
           )}
         </div>
 
+        {/* Example transitions section */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
           {exampleTransitions.map((t, idx) => (
             <button
@@ -240,8 +257,10 @@ export default function RoleTransitionPage() {
           ))}
         </div>
 
+        {/* Transition plan display section */}
         {transitionPlan && (
           <div className="mt-12 bg-white rounded-xl shadow-lg p-8 space-y-12">
+            {/* Plan header with confidence score */}
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
               Transition Plan: {currentRole} → {targetRole}
               <span className="ml-4 text-lg font-normal text-purple-600">

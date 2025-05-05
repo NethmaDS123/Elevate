@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { useSession } from "next-auth/react";
-import { AcademicCapIcon, BookOpenIcon } from "@heroicons/react/24/outline";
+import { useSession } from "next-auth/react"; // Import useSession hook from next-auth/react for session management
+import { AcademicCapIcon, BookOpenIcon } from "@heroicons/react/24/outline"; // Import icons for UI
 
+// Define interfaces for Topic, Step, and Pathway
 interface Topic {
   name: string;
   subtopics: string[];
@@ -28,11 +29,11 @@ interface Pathway {
 }
 
 export default function LearningPathwaysPage() {
-  const { data: session, status } = useSession();
-  const [searchTopic, setSearchTopic] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [pathway, setPathway] = useState<Pathway | null>(null);
+  const { data: session, status } = useSession(); // Use the useSession hook to get the session data and status
+  const [searchTopic, setSearchTopic] = useState(""); // State for the search topic
+  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [error, setError] = useState(""); // State for error messages
+  const [pathway, setPathway] = useState<Pathway | null>(null); // State for the pathway data
 
   const exampleTopics = [
     "Computer Science",
@@ -53,9 +54,10 @@ export default function LearningPathwaysPage() {
     "Cloud Computing",
   ];
 
+  // Function to fetch the learning pathway based on the topic
   const fetchLearningPathway = async (topic: string) => {
-    setError("");
-    setPathway(null);
+    setError(""); // Clear any existing error messages
+    setPathway(null); // Reset the pathway state
     const token =
       session?.user?.accessToken ??
       // NextAuth by default returns id_token in session.user.id_token
@@ -97,6 +99,7 @@ export default function LearningPathwaysPage() {
     }
   };
 
+  // Function to handle the search form submission
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTopic.trim()) {
@@ -104,11 +107,13 @@ export default function LearningPathwaysPage() {
     }
   };
 
+  // Function to handle example topic clicks
   const handleExampleClick = async (topic: string) => {
     setSearchTopic(topic);
     await fetchLearningPathway(topic);
   };
 
+  // Render loading state if session status is loading
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -116,6 +121,7 @@ export default function LearningPathwaysPage() {
       </div>
     );
   }
+  // Render login prompt if session is not found
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -126,6 +132,7 @@ export default function LearningPathwaysPage() {
     );
   }
 
+  // Main render function
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">

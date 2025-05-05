@@ -1,9 +1,11 @@
 "use client";
 
+// Import necessary dependencies
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { FiLoader, FiStar, FiTrendingUp } from "react-icons/fi";
 
+// Define interfaces for type safety
 interface AnalysisData {
   metadata: {
     parse_quality: {
@@ -39,6 +41,7 @@ interface AnalysisData {
   }[];
 }
 
+// Define interface for roadmap items
 interface RoadmapItem {
   timeframe: string;
   goal: string;
@@ -46,7 +49,9 @@ interface RoadmapItem {
   reasoning: string;
 }
 
+// Main component for skill benchmarking analysis
 export default function SkillBenchmarking() {
+  // State management using hooks
   const { data: session, status } = useSession();
   const [roleLevel, setRoleLevel] = useState("internship");
   const [domain, setDomain] = useState("");
@@ -55,6 +60,7 @@ export default function SkillBenchmarking() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Handle form submission and API call
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -62,9 +68,11 @@ export default function SkillBenchmarking() {
     setAnalysis(null);
 
     const backend =
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+      process.env.NEXT_PUBLIC_BACKEND_URL ||
+      "https://elevatebackend.onrender.com";
 
     try {
+      // Make API request to backend
       const response = await fetch(`${backend}/skill_benchmark`, {
         method: "POST",
         headers: {
@@ -90,6 +98,7 @@ export default function SkillBenchmarking() {
     }
   };
 
+  // Loading and authentication states
   if (status === "loading")
     return (
       <div className="flex justify-center py-20">
@@ -99,17 +108,21 @@ export default function SkillBenchmarking() {
   if (!session)
     return <div className="py-20 text-center">Please log in to continue.</div>;
 
+  // Main render
   return (
     <div className="container mx-auto p-6 space-y-8 max-w-5xl">
+      {/* Header */}
       <h1 className="text-3xl font-bold text-center flex items-center justify-center gap-2">
         <FiTrendingUp className="text-blue-600" /> Skill Benchmark Analysis
       </h1>
 
+      {/* Input Form */}
       <form
         onSubmit={handleSubmit}
         className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md"
       >
         <div className="grid md:grid-cols-2 gap-4">
+          {/* Role Level Selection */}
           <select
             className="p-3 rounded border"
             value={roleLevel}
@@ -122,6 +135,7 @@ export default function SkillBenchmarking() {
             <option value="senior">Senior Engineer</option>
             <option value="staff">Staff Engineer</option>
           </select>
+          {/* Domain Input */}
           <input
             type="text"
             placeholder="Domain (e.g., Software Engineering)"
@@ -132,6 +146,7 @@ export default function SkillBenchmarking() {
             required
           />
         </div>
+        {/* Resume Text Input */}
         <textarea
           placeholder="Paste your resume content"
           className="w-full p-3 rounded border"
@@ -141,6 +156,7 @@ export default function SkillBenchmarking() {
           disabled={loading}
           required
         />
+        {/* Submit Button */}
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded flex items-center justify-center gap-2 w-full"
           disabled={loading}
@@ -153,12 +169,15 @@ export default function SkillBenchmarking() {
         )}
       </form>
 
+      {/* Analysis Results Display */}
       {analysis && (
         <>
+          {/* Gap Analysis Section */}
           <section>
             <h2 className="font-bold text-2xl">
               🚩 Detailed Gap Analysis & Comparison
             </h2>
+            {/* Strengths Display */}
             <h3 className="mt-4 font-semibold text-lg">
               ✅ Strengths You Already Possess:
             </h3>
@@ -169,6 +188,7 @@ export default function SkillBenchmarking() {
               </div>
             ))}
 
+            {/* Areas for Improvement Display */}
             <h3 className="mt-4 font-semibold text-lg">
               ❗ Areas for Improvement:
             </h3>
@@ -188,6 +208,7 @@ export default function SkillBenchmarking() {
             )}
           </section>
 
+          {/* Strategic Roadmap Section */}
           <section className="mt-8">
             <h2 className="font-bold text-2xl">🚀 Strategic Career Roadmap</h2>
             {["short_term_goals", "medium_term_goals", "long_term_goals"].map(
@@ -223,6 +244,7 @@ export default function SkillBenchmarking() {
             )}
           </section>
 
+          {/* Resume Improvements Section */}
           <section className="mt-8">
             <h2 className="font-bold text-2xl">
               🎯 Resume Improvement Examples
@@ -240,6 +262,7 @@ export default function SkillBenchmarking() {
             ))}
           </section>
 
+          {/* Benchmark Sources Section */}
           <section className="mt-8 text-sm text-gray-600">
             <strong>Benchmark Sources:</strong>{" "}
             {analysis.metadata.benchmark_sources.join(", ")}

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion"; // Import motion and AnimatePresence from framer-motion for animations
+import { useSession } from "next-auth/react"; // Import useSession from next-auth/react for session management
 import {
   FiAlertTriangle,
   FiEdit3,
@@ -14,8 +14,9 @@ import {
   FiSettings,
   FiUsers,
   FiFileText,
-} from "react-icons/fi";
+} from "react-icons/fi"; // Import icons from react-icons for visual representation
 
+// Define the structure of the Evaluation object
 interface Evaluation {
   overall_score: number;
   breakdown: {
@@ -33,6 +34,7 @@ interface Evaluation {
   };
 }
 
+// Define icons for each evaluation category
 const icons: Record<string, JSX.Element> = {
   innovation: <FiTrendingUp className="w-5 h-5 mr-2 text-blue-500" />,
   technical_complexity: <FiCpu className="w-5 h-5 mr-2 text-purple-500" />,
@@ -45,6 +47,7 @@ const icons: Record<string, JSX.Element> = {
   industry_relevance: <FiUsers className="w-5 h-5 mr-2 text-gray-500" />,
 };
 
+// Define color gradients for each evaluation category
 const colors: Record<string, string> = {
   innovation: "from-blue-400 to-blue-600",
   technical_complexity: "from-purple-400 to-purple-600",
@@ -54,18 +57,20 @@ const colors: Record<string, string> = {
 };
 
 export default function ProjectEvaluationPage() {
-  const { data: session, status } = useSession();
-  const [projectDescription, setProjectDescription] = useState("");
-  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { data: session, status } = useSession(); // Use the session hook to get the session data and status
+  const [projectDescription, setProjectDescription] = useState(""); // State for project description
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null); // State for evaluation data
+  const [loading, setLoading] = useState(false); // State for loading indicator
+  const [error, setError] = useState(""); // State for error message
 
+  // Define a callback function for form submission
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       setError("");
       setEvaluation(null);
 
+      // Check if the user is logged in and if the project description is not empty
       if (!session) {
         setError("You must be logged in to evaluate a project.");
         return;
@@ -80,6 +85,7 @@ export default function ProjectEvaluationPage() {
         const backendUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL ||
           "https://elevatebackend.onrender.com";
+        // Make a POST request to the backend with the project description
         const res = await fetch(`${backendUrl}/evaluate_project`, {
           method: "POST",
           headers: {
@@ -88,9 +94,9 @@ export default function ProjectEvaluationPage() {
           },
           body: JSON.stringify({ project_description: projectDescription }),
         });
-        const data = await res.json();
+        const data = await res.json(); // Parse the response as JSON
         if (res.ok) {
-          setEvaluation(data.evaluation);
+          setEvaluation(data.evaluation); // Set the evaluation state if the response is successful
         } else {
           setError(data.error || "Failed to evaluate project");
         }
@@ -101,9 +107,10 @@ export default function ProjectEvaluationPage() {
         setLoading(false);
       }
     },
-    [projectDescription, session]
+    [projectDescription, session] // Dependencies for the useCallback hook
   );
 
+  // Render a loading indicator if the session status is 'loading'
   if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -111,6 +118,7 @@ export default function ProjectEvaluationPage() {
       </div>
     );
   }
+  // Render a message if the user is not logged in
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -121,6 +129,7 @@ export default function ProjectEvaluationPage() {
     );
   }
 
+  // Render the main content of the page
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-12">

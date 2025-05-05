@@ -24,12 +24,15 @@ import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 // ------------------
 // Type Definitions
 // ------------------
+
+// Interface for each step in the approach
 interface ApproachStep {
   step: string;
   reasoning: string;
   keyOperation: string;
 }
 
+// Interface for time and space complexity analysis
 interface ComplexityAnalysis {
   time: {
     value: string;
@@ -42,23 +45,27 @@ interface ComplexityAnalysis {
   comparison: string;
 }
 
+// Interface for edge case handling
 interface EdgeCase {
   case: string;
   handling: string;
   testExample: string;
 }
 
+// Interface for sample solution details
 interface SampleSolution {
   code: string;
   codeExplanation: string;
 }
 
+// Interface for optimization suggestions
 interface OptimizationTip {
   tip: string;
   benefit: string;
   tradeoff: string;
 }
 
+// Interface for question analysis structure
 interface QuestionAnalysis {
   question: string;
   analysis?: {
@@ -79,6 +86,7 @@ interface QuestionAnalysis {
   };
 }
 
+// Interface for feedback scoring
 interface FeedbackScore {
   overall: number;
   categories: {
@@ -88,6 +96,7 @@ interface FeedbackScore {
   };
 }
 
+// Interface for areas needing improvement
 interface ImprovementArea {
   issue: string;
   severity: string;
@@ -95,6 +104,7 @@ interface ImprovementArea {
   example: string;
 }
 
+// Interface for comprehensive user answer feedback
 interface UserAnswerFeedback {
   score: FeedbackScore;
   strengths: string[];
@@ -112,6 +122,7 @@ interface UserAnswerFeedback {
   }[];
 }
 
+// Interface for accordion component props
 interface AccordionProps {
   title: string;
   children: React.ReactNode;
@@ -119,6 +130,7 @@ interface AccordionProps {
   initialOpen?: boolean;
 }
 
+// Interface for modal component props
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -126,7 +138,7 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
-// CommonPitfalls interface
+// Interface for common pitfalls in solutions
 interface CommonPitfall {
   mistake: string;
   consequence: string;
@@ -153,7 +165,7 @@ const coreTopicExplanations: { [key: string]: string } = {
   Queues:
     "Queues follow a First-In-First-Out (FIFO) structure, meaning the earliest inserted item is the first to be removed. Operations like enqueue, dequeue, and peek run efficiently in O(1). Queues are essential for task scheduling, buffering, streaming data, and breadth-first traversal of trees and graphs.",
   Heaps:
-    "Heaps are specialized binary trees used primarily for priority queue implementations. They efficiently provide quick access (O(1)) to the maximum or minimum element, while insertion and deletion operations take O(log n). Heaps are often utilized in algorithms like heap sort, Dijkstra’s shortest-path, and priority-driven scheduling.",
+    "Heaps are specialized binary trees used primarily for priority queue implementations. They efficiently provide quick access (O(1)) to the maximum or minimum element, while insertion and deletion operations take O(log n). Heaps are often utilized in algorithms like heap sort, Dijkstra's shortest-path, and priority-driven scheduling.",
   Recursion:
     "Recursion is a programming technique where a function calls itself to break a problem into smaller subproblems. It simplifies complex problems, particularly those naturally hierarchical or repetitive, such as traversing trees/graphs, divide-and-conquer algorithms, dynamic programming, permutations, and backtracking solutions.",
   Greedy:
@@ -168,11 +180,12 @@ const coreTopicExplanations: { [key: string]: string } = {
     "Bit manipulation involves performing operations directly on binary digits (bits) of integers. It includes operations like AND, OR, XOR, shifting, and masking. Bit manipulation is highly efficient, commonly utilized in embedded systems, low-level programming, cryptography, error detection algorithms, and performance-critical applications.",
 };
 
+// LeetCode pattern explanations for common problem-solving approaches
 const leetCodePatternExplanations: { [key: string]: string } = {
   "Sliding Window":
     "The Sliding Window technique solves problems involving contiguous subarrays or substrings by maintaining two pointers or indices that represent the bounds of a 'window'. The window dynamically expands or shrinks based on the problem's conditions, optimizing time complexity from O(n²) to O(n). Common applications include substring search, maximum subarray sums, and finding the longest unique character substring.",
   "Two Pointers":
-    "The Two Pointers technique leverages two pointers traversing a data structure from different directions or at varying speeds, effectively reducing unnecessary computations. It’s often employed in sorted arrays or linked lists to find pairs meeting certain conditions (e.g., sum pairs, palindrome checks, or detecting cycles), usually with linear (O(n)) complexity.",
+    "The Two Pointers technique leverages two pointers traversing a data structure from different directions or at varying speeds, effectively reducing unnecessary computations. It's often employed in sorted arrays or linked lists to find pairs meeting certain conditions (e.g., sum pairs, palindrome checks, or detecting cycles), usually with linear (O(n)) complexity.",
   "Merge Intervals":
     "Merge Intervals solves problems involving overlapping intervals by sorting intervals based on their start or end points and merging overlaps sequentially. It's commonly applied in scheduling scenarios, meeting rooms allocation, and calendar event management. The typical complexity is O(n log n), driven by the initial sorting step.",
   "Tree BFS":
@@ -188,7 +201,7 @@ const leetCodePatternExplanations: { [key: string]: string } = {
   Greedy:
     "Greedy algorithms solve optimization problems by making locally optimal choices at each step, with the hope that these choices lead to a globally optimal solution. They're often simpler and faster than dynamic programming but don't guarantee optimality for all problems. Common uses include activity selection, coin change (in specific currencies), Huffman coding, and minimum spanning trees.",
   "Fast and Slow Pointers":
-    "The Fast and Slow Pointers pattern uses two pointers moving through a structure at different speeds (often one at twice the speed of the other). It's effective for cycle detection (Floyd’s Tortoise and Hare algorithm), finding middle elements, and determining palindromes in linked lists. The approach has linear complexity (O(n)) and minimal memory usage.",
+    "The Fast and Slow Pointers pattern uses two pointers moving through a structure at different speeds (often one at twice the speed of the other). It's effective for cycle detection (Floyd's Tortoise and Hare algorithm), finding middle elements, and determining palindromes in linked lists. The approach has linear complexity (O(n)) and minimal memory usage.",
   "Topological Sort":
     "Topological sorting orders nodes in a Directed Acyclic Graph (DAG) so that every directed edge from node A to node B implies A appears before B. This pattern is crucial for scheduling tasks, detecting cycles in dependencies, and build systems. Typical algorithms include Kahn's algorithm and DFS-based methods, both with O(V + E) complexity.",
   "Bit Manipulation":
@@ -199,6 +212,7 @@ const leetCodePatternExplanations: { [key: string]: string } = {
     "Prefix Sum (or cumulative sum) stores the sum of elements up to each index, enabling rapid calculations of range sums or averages. It optimizes range query problems from O(n²) to O(n). Frequently applied in subarray sum problems, range sum queries, and certain optimization scenarios like the equilibrium index problem.",
 };
 
+// Study roadmap explanations for interview preparation
 const studyRoadmapExplanations: { [key: string]: string } = {
   "Step 1: Master Fundamental Data Structures":
     "Gain complete proficiency in essential data structures such as Arrays, Linked Lists, Stacks, Queues, and Hash Tables. Understand their operations, complexity, implementation details, and common applications. Solve problems to master operations like insertion, deletion, traversal, and searching.",
@@ -222,6 +236,7 @@ const studyRoadmapExplanations: { [key: string]: string } = {
     "Constantly refine and revisit your weaker areas. Regularly participate in mock interviews, analyze your performance, and iterate. Review past interview experiences, gather feedback, and continuously adapt your preparation strategy to address identified gaps, optimizing your readiness for interviews at leading tech companies.",
 };
 
+// Behavioral question explanations for interview preparation
 const behavioralQuestionExplanations: { [key: string]: string } = {
   "Tell me about a challenge you overcame":
     "Explain a real-life challenge, how you approached it, the actions you took, and what you learned. Focus on problem-solving and resilience.",
@@ -233,6 +248,7 @@ const behavioralQuestionExplanations: { [key: string]: string } = {
     "Share a failure and the steps you took to overcome it, what you learned, and how it has influenced your work ethic.",
 };
 
+// STAR method explanation for behavioral interviews
 const starMethodExplanation = `The STAR method is a structured manner of responding to behavioral interview questions by discussing the:
   - Situation: Set the context and describe the background.
   - Task: Explain the task or challenge that was involved.
@@ -324,6 +340,8 @@ const Accordion = ({
 // ------------------
 // Technical Components
 // ------------------
+
+// Component to display complexity progress bar
 const ComplexityProgress = ({ value }: { value: string }) => {
   const getWidth = (): number => {
     const complexities: { [key: string]: number } = {
@@ -347,6 +365,8 @@ const ComplexityProgress = ({ value }: { value: string }) => {
     </div>
   );
 };
+
+// Component to display question analysis breakdown
 const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
   const nested = analysis.analysis || {};
   const approachSteps = nested.approach || [];
@@ -506,6 +526,7 @@ const QuestionBreakdown = ({ analysis }: { analysis: QuestionAnalysis }) => {
   );
 };
 
+// Component to display feedback on user's answer
 const AnswerFeedback = ({ feedback }: { feedback: UserAnswerFeedback }) => (
   <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
     <div className="flex items-center gap-3 mb-6">

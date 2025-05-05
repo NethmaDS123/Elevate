@@ -7,6 +7,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 
+// Function to render the sign-in page content
 function SignInPageContent() {
   const router = useRouter();
   const { status } = useSession();
@@ -15,12 +16,14 @@ function SignInPageContent() {
     searchParams.get("callbackUrl") || "/platform/features/dashboard";
   const [isLoading, setIsLoading] = useState(false);
 
+  // Effect to handle redirect after successful authentication
   useEffect(() => {
     if (status === "authenticated") {
       router.push(callbackUrl);
     }
   }, [status, callbackUrl, router]);
 
+  // Function to handle sign-in with Google
   const handleSignIn = async () => {
     setIsLoading(true);
     try {
@@ -118,6 +121,7 @@ function SignInPageContent() {
   );
 }
 
+// Function to wrap the sign-in page content with a suspense fallback
 export default function SignInPage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
