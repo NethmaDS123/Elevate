@@ -1,7 +1,6 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import Footer from "@/components/Footer";
 import "./globals.css";
 import "@/lib/axiosInterceptors";
 import { Analytics } from "@vercel/analytics/react";
@@ -25,7 +24,6 @@ export default function RootLayout({
               <Analytics /> {/* Vercel analytics */}
             </main>
           </SessionProvider>
-          <Footer />
         </div>
       </body>
     </html>
