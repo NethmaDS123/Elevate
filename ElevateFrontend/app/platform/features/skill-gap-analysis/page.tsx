@@ -72,6 +72,10 @@ export default function SkillBenchmarking() {
       "https://elevatebackend.onrender.com";
 
     try {
+      // Set a timeout for the request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
       // Make API request to backend
       const response = await fetch(`${backend}/skill_benchmark`, {
         method: "POST",
@@ -84,15 +88,31 @@ export default function SkillBenchmarking() {
           target_role_level: roleLevel,
           domain,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok)
         throw new Error(`Analysis failed: ${response.statusText}`);
 
-      const data: AnalysisData = await response.json();
+      const data = await response.json();
+
+      // Check if the response contains an error flag
+      if (data.error) {
+        throw new Error(data.message || "Analysis failed");
+      }
+
       setAnalysis(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analysis failed");
+      console.error("Skill benchmark error:", err);
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError(
+          "Request timed out. Please try again with a shorter resume or try later."
+        );
+      } else {
+        setError(err instanceof Error ? err.message : "Analysis failed");
+      }
     } finally {
       setLoading(false);
     }
