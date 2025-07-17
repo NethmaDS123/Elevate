@@ -5,11 +5,35 @@ import asyncio
 import logging
 from datetime import datetime, UTC
 
-from fastapi import FastAPI, Request, Header, HTTPException, status
+from fastapi import FastAPI, Request, Header, HTTPException, status, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
 import json 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Check for required environment variables
+required_env_vars = ["OPENAI_API_KEY", "MONGODB_URI"]
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+
+# For development, we'll set placeholder values and continue with warnings
+if missing_vars:
+    print(f"\n⚠️  WARNING: Missing environment variables: {', '.join(missing_vars)}")
+    print("⚠️  Some features may not work correctly without these variables.")
+    print("⚠️  Please set these variables in your .env file for full functionality.")
+    print("⚠️  Setting temporary development values to allow the server to start.\n")
+    
+    # Set placeholder values for development
+    if "OPENAI_API_KEY" in missing_vars:
+        os.environ["OPENAI_API_KEY"] = "sk-dummy-key-for-development"
+        print("✓ Set placeholder OPENAI_API_KEY (resume optimization will not work)")
+    if "MONGODB_URI" in missing_vars:
+        os.environ["MONGODB_URI"] = "mongodb://localhost:27017/elevate"
+        print("✓ Set placeholder MONGODB_URI (database operations will not work)")
+    print()
 
 from features.project_evaluation import ProjectEvaluator
 from features.learning_paths import LearningPathways
@@ -17,6 +41,7 @@ from features.resume_optimization import ResumeOptimizer
 from features.interview_preparation import InterviewPreparation
 from features.role_transition import RoleTransition 
 from features.skill_benchmark import SkillBenchmark
+from features.resume_extraction import ResumeExtractor
 from database import (
     fetch_learning_pathway_results,
     fetch_optimization_results,
@@ -68,6 +93,7 @@ learning_pathways_instance= LearningPathways()
 interview_preparation_instance   = InterviewPreparation()
 role_transition_instance  = RoleTransition()
 skill_benchmark_instance = SkillBenchmark()
+resume_extractor = ResumeExtractor()
 
 # Setting the maximum number of concurrent tasks
 MAX_CONCURRENT_TASKS = 5
@@ -237,6 +263,8 @@ async def optimize_resume(request: Request, authorization: str = Header(None)):
     body = await request.json()
     resume_text = body.get("resume_text")
     job_description = body.get("job_description")
+    format_details = body.get("format_details")  # This can be None if not provided
+    
     # Validate if both resume_text and job_description are provided
     if not resume_text or not job_description:
         raise HTTPException(
@@ -264,10 +292,12 @@ async def optimize_resume(request: Request, authorization: str = Header(None)):
             # Run the resume optimizer in a separate thread
             result: dict = await asyncio.get_event_loop().run_in_executor(
                 None,
-                resume_optimizer.optimize,
-                user_id,
-                resume_text,
-                job_description
+                lambda: resume_optimizer.optimize(
+                    user_id,
+                    resume_text,
+                    job_description,
+                    format_details
+                )
             )
             logger.info(f"[{user_id}] Completed resume optimization (id={optimization_id}) ats_score={result.get('ats_score')}")
 
@@ -285,18 +315,18 @@ async def optimize_resume(request: Request, authorization: str = Header(None)):
                 "optimization_id": optimization_id,
                 **result
             }
-        except Exception:
+        except Exception as e:
             # Log and handle any exceptions during resume optimization
-            logger.exception(f"[{user_id}] Resume optimization failed (id={optimization_id})")
+            logger.exception(f"[{user_id}] Resume optimization failed (id={optimization_id}): {str(e)}")
             users_collection.update_one(
                 {"_id": user_id, "features.resumeOptimizer.optimization_id": optimization_id},
                 {"$set": {
                     "features.resumeOptimizer.$.status":    "failed",
-                    "features.resumeOptimizer.$.error":     str(Exception),
+                    "features.resumeOptimizer.$.error":     str(e),
                     "features.resumeOptimizer.$.updatedAt": datetime.now(UTC)
                 }}
             )
-            raise HTTPException(status_code=500, detail="Internal error during resume optimization")
+            raise HTTPException(status_code=500, detail=f"Internal error during resume optimization: {str(e)}")
 
 # ----------------
 # Learning Pathways Endpoint
@@ -670,6 +700,58 @@ async def skill_benchmark(request: Request, authorization: str = Header(None)):
             )
             raise HTTPException(status_code=500, detail=str(e))
 
+# ----------------
+# Resume File Extraction Endpoint
+# ----------------
+@app.post("/extract_resume_text")
+async def extract_resume_text(
+    resume: UploadFile = File(...),
+    authorization: str = Header(None)
+):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on extract_resume_text")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    
+    # Validate file type
+    valid_types = [
+        "application/pdf", 
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ]
+    
+    if resume.content_type not in valid_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid file type. Please upload a PDF or Word document."
+        )
+    
+    try:
+        # Extract text from the resume file
+        logger.info(f"[{user_id}] Extracting text from resume: {resume.filename}")
+        result = await resume_extractor.extract_text(resume)
+        
+        # Return the extracted text and metadata
+        return {
+            "text": result["text"],
+            "metadata": result["metadata"],
+            "format_details": result["metadata"]["formatting"]  # Include formatting details
+        }
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Resume extraction failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to extract text from resume: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
