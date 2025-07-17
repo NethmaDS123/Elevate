@@ -23,22 +23,33 @@ const authOptions: AuthOptions = {
     strategy: "jwt" as SessionStrategy, // Use JWT strategy for sessions
     maxAge: 30 * 24 * 60 * 60, // Session max age: 30 days
   },
+  pages: {
+    signIn: "/signin",
+    error: "/signin", // Error code passed in query string as ?error=
+  },
   callbacks: {
-    async jwt({ token, account }) {
-      // Add account's id_token to token if account is present
+    async signIn({ user, account, profile, email, credentials }) {
+      console.log("SignIn callback", { user, account, profile });
+      return true;
+    },
+    async jwt({ token, account, profile }) {
       if (account) {
         token.id_token = account.id_token;
+        token.accessToken = account.access_token;
       }
       return token;
     },
-    async session({ session, token }) {
-      // Add token's id_token to session user if it's a string
+    async session({ session, token, user }) {
+      console.log("Session callback", { session, token, user });
       if (session.user && typeof token.id_token === "string") {
         (session.user as { id_token?: string }).id_token = token.id_token;
+        (session.user as { accessToken?: string }).accessToken =
+          token.accessToken as string;
       }
       return session;
     },
   },
+  debug: process.env.NODE_ENV === "development",
   secret: process.env.NEXTAUTH_SECRET,
 };
 

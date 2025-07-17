@@ -50,7 +50,7 @@ export default function LearningPathwaysPage() {
     "Machine Learning",
     "DevOps",
     "Blockchain",
-    "AI Ethics",
+    "AI",
     "Cloud Computing",
   ];
 

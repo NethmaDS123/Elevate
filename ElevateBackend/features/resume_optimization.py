@@ -1,5 +1,4 @@
 # features/resume_optimization.py
-
 """
 ResumeOptimizer: end to end résumé enhancement using OpenAI.
 Builds a structured prompt (ATS optimised resume + analysis + score)
@@ -7,6 +6,7 @@ Sends it to OpenAI
 Parses / validates pure JSON response
 Persists input + output to MongoDB (via store_optimization_results)
 """
+
 import re
 import time
 import openai
