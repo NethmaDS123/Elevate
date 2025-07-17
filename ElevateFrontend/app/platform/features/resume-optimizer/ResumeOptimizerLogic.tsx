@@ -75,7 +75,8 @@ export function useResumeOptimizer() {
       formData.append("resume", file);
 
       const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3000";
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevate-backend.onrender.com";
 
       // Send the file to extract text
       const res = await axios.post(
