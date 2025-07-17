@@ -11,7 +11,6 @@ import { useResumeOptimizer } from "./ResumeOptimizerLogic";
 export default function ResumeOptimizer() {
   const {
     resumeText,
-    setResumeText,
     jobDescription,
     setJobDescription,
     response,
