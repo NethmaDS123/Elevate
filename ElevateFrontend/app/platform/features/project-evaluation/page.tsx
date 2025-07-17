@@ -1,20 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSession } from "next-auth/react";
-import {
-  FiAlertTriangle,
-  FiEdit3,
-  FiLoader,
-  FiStar,
-  FiCheckCircle,
-  FiCpu,
-  FiTrendingUp,
-  FiSettings,
-  FiUsers,
-  FiFileText,
-} from "react-icons/fi";
+import { FiLoader } from "react-icons/fi";
 
 // Import components and logic
 import { useProjectEvaluation } from "./ProjectEvaluationLogic";
