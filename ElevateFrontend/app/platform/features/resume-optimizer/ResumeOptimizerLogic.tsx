@@ -88,7 +88,7 @@ export function useResumeOptimizer() {
 
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ||
-        "https://elevate-backend.onrender.com";
+        "https://elevatebackend.onrender.com";
 
       // Send the file to extract text
       const res = await axios.post(

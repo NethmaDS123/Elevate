@@ -58,13 +58,17 @@ export default function LearningPathwaysPage() {
   const fetchLearningPathway = async (topic: string) => {
     setError(""); // Clear any existing error messages
     setPathway(null); // Reset the pathway state
-    const token =
-      session?.user?.accessToken ??
-      // NextAuth by default returns id_token in session.user.id_token
-      session?.user?.id_token;
 
-    if (!token) {
+    if (!session || !session.user) {
       setError("You must be logged in to generate a pathway.");
+      return;
+    }
+
+    const token = session.user.id_token;
+    if (!token) {
+      setError(
+        "Authentication token not available. Please try logging in again."
+      );
       return;
     }
 

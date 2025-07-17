@@ -92,7 +92,8 @@ export function useProjectEvaluation() {
       setLoading(true);
       try {
         const backendUrl =
-          process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+          process.env.NEXT_PUBLIC_BACKEND_URL ||
+          "https://elevatebackend.onrender.com";
         // Make a POST request to the backend with the project description
         const res = await fetch(`${backendUrl}/evaluate_project`, {
           method: "POST",
