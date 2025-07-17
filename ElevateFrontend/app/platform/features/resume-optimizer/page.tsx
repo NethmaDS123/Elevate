@@ -45,7 +45,6 @@ export default function ResumeOptimizer() {
     <ResumeOptimizerUI
       isOpen={isOpen}
       resumeText={resumeText}
-      setResumeText={setResumeText}
       jobDescription={jobDescription}
       setJobDescription={setJobDescription}
       response={response}
