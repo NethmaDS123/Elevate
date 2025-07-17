@@ -201,7 +201,6 @@ export function FileUploadArea({
 export function ResumeOptimizerUI({
   isOpen,
   resumeText,
-  setResumeText,
   jobDescription,
   setJobDescription,
   response,
@@ -218,7 +217,6 @@ export function ResumeOptimizerUI({
 }: {
   isOpen: boolean;
   resumeText: string;
-  setResumeText: (text: string) => void;
   jobDescription: string;
   setJobDescription: (text: string) => void;
   response: OptimizationResponse | null;

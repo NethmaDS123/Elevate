@@ -37,6 +37,16 @@ export interface OptimizationResponse {
   };
 }
 
+// Define interface for format details
+interface FormatDetails {
+  page_count?: number;
+  fonts?: string[];
+  colors?: string[];
+  spacing?: string;
+  design_elements?: string[];
+  [key: string]: unknown;
+}
+
 export function useResumeOptimizer() {
   const { data: session, status } = useSession();
   const { isOpen } = useSidebar();
@@ -48,7 +58,9 @@ export function useResumeOptimizer() {
   const [activeTab, setActiveTab] = useState("overview");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
-  const [formatDetails, setFormatDetails] = useState<any>(null);
+  const [formatDetails, setFormatDetails] = useState<FormatDetails | null>(
+    null
+  );
 
   // Function to handle file upload
   const handleFileUpload = async (file: File) => {

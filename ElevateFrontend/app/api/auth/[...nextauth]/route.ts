@@ -28,11 +28,11 @@ const authOptions: AuthOptions = {
     error: "/signin", // Error code passed in query string as ?error=
   },
   callbacks: {
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn({ user, account, profile }) {
       console.log("SignIn callback", { user, account, profile });
       return true;
     },
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account }) {
       if (account) {
         token.id_token = account.id_token;
         token.accessToken = account.access_token;
