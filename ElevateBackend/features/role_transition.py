@@ -6,20 +6,20 @@ import json
 from datetime import datetime, UTC
 from typing import Optional
 
-import google.generativeai as genai
+import openai
 from database import store_role_transition
 from dotenv import load_dotenv
 
 # Load .env
 load_dotenv()
 
-# Configure Gemini API key
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found")
-genai.configure(api_key=GEMINI_API_KEY)
+# Configure OpenAI API key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY not found")
+openai.api_key = OPENAI_API_KEY
 
-MODEL = "gemini-1.5-flash"
+MODEL = "gpt-4o"
 
 
 class RoleTransition:
@@ -109,21 +109,58 @@ Resume Analysis: {resume_text if resume_text else "No resume provided - make gen
 
 Respond STRICTLY in valid JSON. No Markdown formatting.
 """
-        # Call Gemini
-        response = genai.GenerativeModel(MODEL).generate_content(prompt)
-        text = response.text.strip()
-
-        # Strip markdown fences if present
-        match = re.search(r"```json\s*(\{.*\})\s*```", text, re.DOTALL)
-        json_str = match.group(1) if match else text
-        plan = json.loads(json_str)
-
-        # Persist final plan (with resume snapshot)
-        store_role_transition(user_id, {
-            "currentRole": current,
-            "targetRole": target,
-            "resume_text": resume_text,
-            "plan": plan,
-            "timestamp": datetime.now(UTC)
-        })
-        return plan
+        try:
+            # Call OpenAI
+            response = openai.chat.completions.create(
+                model=MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                timeout=60,  # 60 second timeout
+                max_tokens=4000
+            )
+            text = response.choices[0].message.content.strip()
+            
+            # Strip markdown fences if present
+            match = re.search(r"```json\s*(\{.*\})\s*```", text, re.DOTALL)
+            json_str = match.group(1) if match else text
+            plan = json.loads(json_str)
+            
+            # Persist final plan (with resume snapshot)
+            store_role_transition(user_id, {
+                "currentRole": current,
+                "targetRole": target,
+                "resume_text": resume_text,
+                "plan": plan,
+                "timestamp": datetime.now(UTC)
+            })
+            return plan
+            
+        except Exception as e:
+            # Log the error and return a simplified error response
+            import logging
+            logging.error(f"Role transition plan generation failed: {str(e)}")
+            
+            # Return a simplified error response that the frontend can handle
+            return {
+                "error": True,
+                "message": f"Failed to generate role transition plan: {str(e)}",
+                "personalizedSummary": {
+                    "transferableSkills": [],
+                    "skillGapAnalysis": {"hardSkills": [], "softSkills": []},
+                    "confidenceScore": 0
+                },
+                "skillDevelopment": {
+                    "existingToLeverage": [],
+                    "newToAcquire": []
+                },
+                "projectSuggestions": [],
+                "actionPlan": {
+                    "immediateActions": [],
+                    "phaseBasedTimeline": []
+                },
+                "networkingStrategy": {
+                    "targetCompanies": [],
+                    "keyRolesToConnect": [],
+                    "communities": []
+                }
+            }

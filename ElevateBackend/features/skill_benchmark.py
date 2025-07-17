@@ -4,7 +4,7 @@ import os
 import logging
 from datetime import datetime, UTC
 
-import google.generativeai as genai
+import openai
 from dotenv import load_dotenv
 from database import store_user_feature
 
@@ -12,12 +12,12 @@ from database import store_user_feature
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment and configure Gemini
+# Load environment and configure OpenAI
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("GEMINI_API_KEY not found in environment variables!")
-genai.configure(api_key=GEMINI_API_KEY)
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise ValueError("OPENAI_API_KEY not found in environment variables!")
+openai.api_key = OPENAI_API_KEY
 
 # Prompt template 
 SKILL_BENCHMARK_PROMPT = """
@@ -116,7 +116,7 @@ Return only valid JSON, ensuring highly detailed explanations and actionable ins
 """
 
 class SkillBenchmark:
-    def __init__(self, model_name: str = "gemini-1.5-flash"):
+    def __init__(self, model_name: str = "gpt-4o"):
         self.model_name = model_name
 
     def _clean_response(self, text: str) -> str:
@@ -125,22 +125,35 @@ class SkillBenchmark:
         return re.sub(r"```$", "", text).strip()
 
     def _run_step(self, prompt: str) -> dict:
-        logger.info(f"Sending prompt to Gemini (size: {len(prompt)} chars)")
-        model = genai.GenerativeModel(self.model_name)
-        resp = model.generate_content(prompt)
-
-        # Clean out any markdown fencing
-        cleaned = self._clean_response(resp.text)
-
-        # Strip any stray C0 control chars 
-        sanitized = re.sub(r'[^\x09\x0A\x0D\x20-\x7E]', '', cleaned)
-
+        logger.info(f"Sending prompt to OpenAI (size: {len(prompt)} chars)")
         try:
-            # Allow control characters inside strings on Python 
-            return json.loads(sanitized, strict=False)
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parsing failed after sanitization: {e}\nSanitized response was:\n{sanitized}")
-            raise RuntimeError(f"Gemini JSON parse error: {e}")
+            response = openai.chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+                timeout=60,  # 60 second timeout
+                max_tokens=4000
+            )
+            
+            # Get the response text
+            text = response.choices[0].message.content
+            
+            # Clean out any markdown fencing
+            cleaned = self._clean_response(text)
+            
+            # Strip any stray C0 control chars 
+            sanitized = re.sub(r'[^\x09\x0A\x0D\x20-\x7E]', '', cleaned)
+            
+            try:
+                # Allow control characters inside strings on Python 
+                return json.loads(sanitized, strict=False)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing failed after sanitization: {e}\nSanitized response was:\n{sanitized}")
+                raise RuntimeError(f"OpenAI JSON parse error: {e}")
+                
+        except Exception as e:
+            logger.error(f"OpenAI API call failed: {str(e)}")
+            raise RuntimeError(f"OpenAI API error: {str(e)}")
 
     def run(self, user_id: str, entry_id: str, resume_text: str, domain: str, target_role_level: str) -> dict:
         if len(resume_text) < 100:
@@ -153,23 +166,50 @@ class SkillBenchmark:
             resume_text=resume_text
         )
 
-        # Call Gemini and parse result
-        result = self._run_step(prompt)
-
-        # Persist the feature result
-        store_user_feature(
-            user_id,
-            "skill_benchmark",
-            {
-                "entry_id": entry_id,
-                "input": {
-                    "resume_text": resume_text,
-                    "domain": domain,
-                    "target_role_level": target_role_level
+        try:
+            # Call OpenAI and parse result
+            result = self._run_step(prompt)
+            
+            # Persist the feature result
+            store_user_feature(
+                user_id,
+                "skill_benchmark",
+                {
+                    "entry_id": entry_id,
+                    "input": {
+                        "resume_text": resume_text,
+                        "domain": domain,
+                        "target_role_level": target_role_level
+                    },
+                    "output": result,
+                    "timestamp": datetime.now(UTC).isoformat()
+                }
+            )
+            
+            return result
+        except Exception as e:
+            logger.error(f"Skill benchmark failed: {str(e)}")
+            # Return a simplified error response that the frontend can handle
+            return {
+                "error": True,
+                "message": f"Analysis failed: {str(e)}",
+                "metadata": {
+                    "parse_quality": {
+                        "skills_extracted": 0,
+                        "projects_analyzed": 0,
+                        "leadership_roles": 0,
+                        "parse_attempts": 0
+                    },
+                    "benchmark_sources": []
                 },
-                "output": result,
-                "timestamp": datetime.now(UTC).isoformat()
+                "detailed_gap_analysis": {
+                    "strengths": [],
+                    "areas_for_improvement": []
+                },
+                "strategic_roadmap": {
+                    "short_term_goals": [],
+                    "medium_term_goals": [],
+                    "long_term_goals": []
+                },
+                "resume_improvements": []
             }
-        )
-
-        return result
