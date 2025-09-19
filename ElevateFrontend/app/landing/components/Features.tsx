@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // Commented out as it's not used
 import {
   DocumentTextIcon,
   BriefcaseIcon,
@@ -10,7 +10,6 @@ import {
   EnvelopeIcon,
   CommandLineIcon,
   SparklesIcon,
-  ArrowRightIcon,
   LightBulbIcon,
 } from "@heroicons/react/24/outline";
 
@@ -90,7 +89,7 @@ const features = [
 ];
 
 export default function Features() {
-  const router = useRouter();
+  // const router = useRouter(); // Commented out as it's not used
 
   return (
     <section className="relative py-20 bg-gray-50 overflow-hidden">

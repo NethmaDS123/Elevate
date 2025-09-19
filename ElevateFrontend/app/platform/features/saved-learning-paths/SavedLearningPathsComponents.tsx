@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  FiBookOpen,
   FiLoader,
   FiTrash2,
   FiCalendar,
@@ -11,17 +10,7 @@ import {
   FiChevronRight,
   FiHeart,
   FiClock,
-  FiTarget,
   FiZap,
-  FiStar,
-  FiCheckCircle,
-  FiCode,
-  FiAward,
-  FiFlag,
-  FiExternalLink,
-  FiGlobe,
-  FiTool,
-  FiPlay,
   FiFolder,
   FiRefreshCw,
 } from "react-icons/fi";
@@ -190,7 +179,6 @@ interface SavedPathwayCardProps {
   isExpanded: boolean;
   onToggleExpand: () => void;
   onDelete: () => void;
-  completedItems: Map<string, Set<string>>;
   toggleItemCompletion: (pathwayId: string, itemId: string) => void;
   isItemCompleted: (pathwayId: string, itemId: string) => boolean;
   getProgressStats: (
@@ -208,7 +196,6 @@ function SavedPathwayCard({
   isExpanded,
   onToggleExpand,
   onDelete,
-  completedItems,
   toggleItemCompletion,
   isItemCompleted,
   getProgressStats,
@@ -424,8 +411,6 @@ interface SavedPathwaysListProps {
   expandedPathway: string | null;
   setExpandedPathway: (id: string | null) => void;
   deletePathway: (pathwayId: string) => void;
-  updateProgress: (pathwayId: string, progressData: any) => void;
-  completedItems: Map<string, Set<string>>;
   toggleItemCompletion: (pathwayId: string, itemId: string) => void;
   isItemCompleted: (pathwayId: string, itemId: string) => boolean;
   getProgressStats: (
@@ -443,8 +428,6 @@ export function SavedPathwaysList({
   expandedPathway,
   setExpandedPathway,
   deletePathway,
-  updateProgress,
-  completedItems,
   toggleItemCompletion,
   isItemCompleted,
   getProgressStats,
@@ -471,7 +454,6 @@ export function SavedPathwaysList({
             )
           }
           onDelete={() => deletePathway(pathway.pathway_id)}
-          completedItems={completedItems}
           toggleItemCompletion={toggleItemCompletion}
           isItemCompleted={isItemCompleted}
           getProgressStats={getProgressStats}

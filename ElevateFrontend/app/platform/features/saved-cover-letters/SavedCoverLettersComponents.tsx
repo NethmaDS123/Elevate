@@ -57,7 +57,7 @@ export function EmptyState() {
           No Saved Cover Letters
         </h3>
         <p className="text-gray-400 mb-6">
-          You haven't saved any cover letters yet. Generate and save your first
+          You haven&apos;t saved any cover letters yet. Generate and save your first
           cover letter to see it here.
         </p>
         <motion.a

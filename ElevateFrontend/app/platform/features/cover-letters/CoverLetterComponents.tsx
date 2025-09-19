@@ -17,7 +17,7 @@ import {
   FiUpload,
   FiFile,
   FiX,
-  FiUser,
+  // FiUser, // Commented out as it's not used
   FiEdit3,
   FiMail,
   FiStar,
@@ -511,7 +511,7 @@ export function TabNavigation({
 export function CoverLetterGeneratorUI({
   isOpen,
   resumeText,
-  setResumeText,
+  // setResumeText, // Commented out as it's not used
   jobDescription,
   setJobDescription,
   response,

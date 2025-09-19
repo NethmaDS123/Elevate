@@ -5,7 +5,6 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
   ArrowRightIcon,
-  PlayIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Hero() {

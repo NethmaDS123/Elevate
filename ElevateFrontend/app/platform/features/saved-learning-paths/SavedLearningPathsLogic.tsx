@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 
 // ------------------
@@ -19,7 +19,12 @@ interface Topic {
   name: string;
   description: string;
   estimated_time: string;
-  resources: { type: string; title: string; url?: string; description?: string; }[];
+  resources: {
+    type: string;
+    title: string;
+    url?: string;
+    description?: string;
+  }[];
   projects?: Project[];
 }
 
@@ -54,7 +59,7 @@ export interface LearningPathway {
   career_outcomes?: string[];
 }
 
-interface ProgressData {
+export interface ProgressData {
   completed_items: string[];
   total_items: number;
   percentage: number;
@@ -95,7 +100,7 @@ export function useSavedLearningPaths() {
   >(new Map());
 
   // Function to fetch saved learning pathways
-  const fetchSavedPathways = async () => {
+  const fetchSavedPathways = useCallback(async () => {
     if (!session || !session.user) {
       setError("You must be logged in to view saved pathways.");
       return;
@@ -181,7 +186,7 @@ export function useSavedLearningPaths() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   // Function to delete a saved pathway
   const deletePathway = async (pathwayId: string) => {

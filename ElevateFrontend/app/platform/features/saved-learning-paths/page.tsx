@@ -80,8 +80,6 @@ export default function SavedLearningPathwaysPage() {
             expandedPathway={expandedPathway}
             setExpandedPathway={setExpandedPathway}
             deletePathway={deletePathway}
-            updateProgress={updateProgress}
-            completedItems={completedItems}
             toggleItemCompletion={toggleItemCompletion}
             isItemCompleted={isItemCompleted}
             getProgressStats={getProgressStats}

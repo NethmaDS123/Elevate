@@ -1,7 +1,7 @@
 "use client";
 
 import { SessionProvider } from "next-auth/react";
-import Footer from "@/components/Footer";
+// import Footer from "@/components/Footer"; // Commented out as it's not used
 import "./globals.css";
 import "@/lib/axiosInterceptors";
 import { Analytics } from "@vercel/analytics/react";

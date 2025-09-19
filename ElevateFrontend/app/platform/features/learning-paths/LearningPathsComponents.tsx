@@ -17,24 +17,24 @@ import {
   FiZap,
   FiStar,
   FiCheckCircle,
-  FiDollarSign,
-  FiGift,
-  FiMapPin,
+  // FiDollarSign, // Commented out as it's not used
+  // FiGift, // Commented out as it's not used
+  // FiMapPin, // Commented out as it's not used
   FiLayers,
   FiTool,
-  FiGitBranch,
+  // FiGitBranch, // Commented out as it's not used
   FiBriefcase,
   FiMonitor,
   FiBook,
   FiVideo,
   FiFileText,
   FiGlobe,
-  FiCalendar,
+  // FiCalendar, // Commented out as it's not used
   FiBarChart,
   FiFlag,
   FiLink,
   FiShield,
-  FiAlertCircle,
+  // FiAlertCircle, // Commented out as it's not used
   FiSave,
   FiHeart,
 } from "react-icons/fi";
@@ -44,12 +44,12 @@ import {
   Topic,
   Resource,
   Project,
-  MilestoneProject,
-  IndustryReadiness,
-  ContinuousLearning,
-  Community,
-  Certification,
-  exampleTopics,
+  // MilestoneProject, // Commented out as it's not used
+  // IndustryReadiness, // Commented out as it's not used
+  // ContinuousLearning, // Commented out as it's not used
+  // Community, // Commented out as it's not used
+  // Certification, // Commented out as it's not used
+  // exampleTopics, // Commented out as it's not used
 } from "./LearningPathsLogic";
 
 // ------------------

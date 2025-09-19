@@ -13,7 +13,7 @@ import {
   FiClock,
   FiInfo,
   FiExternalLink,
-  FiMessageSquare,
+  // FiMessageSquare, // Commented out as it's not used
   FiCode,
 } from "react-icons/fi";
 import SyntaxHighlighter from "react-syntax-highlighter";

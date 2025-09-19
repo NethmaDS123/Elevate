@@ -5,13 +5,12 @@ import {
   DocumentTextIcon,
   SparklesIcon,
   ChartBarIcon,
-  ArrowRightIcon,
   CheckCircleIcon,
 } from "@heroicons/react/24/outline";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // Commented out as it's not used
 
 export default function HowItWorks() {
-  const router = useRouter();
+  // const router = useRouter(); // Commented out as it's not used
 
   const steps = [
     {
