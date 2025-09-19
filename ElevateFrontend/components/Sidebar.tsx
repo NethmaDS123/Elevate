@@ -11,15 +11,9 @@ import {
   FiBookOpen,
   FiArrowLeft,
   FiCheckCircle,
-  FiArrowUpRight,
   FiUsers,
   FiMail,
-  FiZap,
-  FiCode,
   FiBriefcase,
-  FiUser,
-  FiFolder,
-  FiHeart,
 } from "react-icons/fi";
 import { useSidebar } from "./SidebarContext";
 

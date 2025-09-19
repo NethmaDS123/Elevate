@@ -7,11 +7,65 @@ import { useSession } from "next-auth/react";
 // Type Definitions (reusing from learning-paths)
 // ------------------
 
+interface Project {
+  name: string;
+  description: string;
+  difficulty: string;
+  estimated_time: string;
+  technologies?: string[];
+}
+
+interface Topic {
+  name: string;
+  description: string;
+  estimated_time: string;
+  resources: { type: string; title: string; url?: string; description?: string; }[];
+  projects?: Project[];
+}
+
+interface Step {
+  step?: number;
+  title: string;
+  description?: string;
+  duration: string;
+  skill_level?: "Beginner" | "Intermediate" | "Advanced";
+  core_goals: string[];
+  learning_outcomes?: string[];
+  topics: Topic[];
+  milestone_project?: {
+    name: string;
+    description: string;
+    requirements: string[];
+  };
+  assessment_ideas?: string[];
+}
+
+export interface LearningPathway {
+  title: string;
+  description: string;
+  total_duration: string;
+  difficulty_level: string;
+  prerequisites: string[];
+  learning_outcomes: string[];
+  steps?: Step[];
+  topic?: string;
+  timeline?: string;
+  overview?: string;
+  career_outcomes?: string[];
+}
+
+interface ProgressData {
+  completed_items: string[];
+  total_items: number;
+  percentage: number;
+  last_accessed?: string;
+}
+
 export interface SavedPathway {
   entry_id: string;
   pathway_id: string;
   topic: string;
-  learning_pathway: any; // The actual pathway data
+  learning_pathway: LearningPathway;
   progress: {
     completed_items: string[];
     total_items: number;
@@ -186,7 +240,10 @@ export function useSavedLearningPaths() {
   };
 
   // Function to update progress for a pathway
-  const updateProgress = async (pathwayId: string, progressData: any) => {
+  const updateProgress = async (
+    pathwayId: string,
+    progressData: ProgressData
+  ) => {
     if (!session || !session.user) {
       return;
     }
@@ -274,7 +331,7 @@ export function useSavedLearningPaths() {
     return pathwayItems.has(itemId);
   };
 
-  const getProgressStats = (pathwayId: string, pathway?: any) => {
+  const getProgressStats = (pathwayId: string, pathway?: LearningPathway) => {
     const pathwayItems = completedItems.get(pathwayId) || new Set();
 
     if (!pathway) {
@@ -286,22 +343,22 @@ export function useSavedLearningPaths() {
 
     // Count based on pathway structure (same logic as original)
     if (pathway.steps) {
-      pathway.steps.forEach((step: any, stepIndex: number) => {
+      pathway.steps.forEach((step: Step, stepIndex: number) => {
         // Count core goals
-        step.core_goals?.forEach((_: any, goalIndex: number) => {
+        step.core_goals?.forEach((_: string, goalIndex: number) => {
           total++;
           if (pathwayItems.has(`step-${stepIndex}-goal-${goalIndex}`))
             completed++;
         });
 
         // Count topics
-        step.topics?.forEach((topic: any, topicIndex: number) => {
+        step.topics?.forEach((topic: Topic, topicIndex: number) => {
           total++;
           if (pathwayItems.has(`step-${stepIndex}-topic-${topicIndex}`))
             completed++;
 
           // Count projects
-          topic.projects?.forEach((_: any, projectIndex: number) => {
+          topic.projects?.forEach((_: Project, projectIndex: number) => {
             total++;
             if (
               pathwayItems.has(
@@ -330,7 +387,7 @@ export function useSavedLearningPaths() {
     if (session && session.user) {
       fetchSavedPathways();
     }
-  }, [session]);
+  }, [session, fetchSavedPathways]);
 
   return {
     // State

@@ -29,6 +29,8 @@ import { SavedPathway } from "./SavedLearningPathsLogic";
 
 // Import the pathway display components we already have
 import { PathwayDisplay } from "../learning-paths/LearningPathsComponents";
+import { Pathway } from "../learning-paths/LearningPathsLogic";
+import { LearningPathway } from "./SavedLearningPathsLogic";
 
 // ------------------
 // Loading and State Components
@@ -193,7 +195,7 @@ interface SavedPathwayCardProps {
   isItemCompleted: (pathwayId: string, itemId: string) => boolean;
   getProgressStats: (
     pathwayId: string,
-    pathway?: any
+    pathway?: LearningPathway
   ) => {
     completed: number;
     total: number;
@@ -342,7 +344,7 @@ function SavedPathwayCard({
           <div className="text-center p-3 bg-[#252525] rounded-lg border border-[#2A2A2A]">
             <div className="text-lg font-semibold text-white">
               {pathway.learning_pathway?.steps?.reduce(
-                (acc: number, step: any) => acc + (step.topics?.length || 0),
+                (acc: number, step) => acc + (step.topics?.length || 0),
                 0
               ) || 0}
             </div>
@@ -350,7 +352,9 @@ function SavedPathwayCard({
           </div>
           <div className="text-center p-3 bg-[#252525] rounded-lg border border-[#2A2A2A]">
             <div className="text-lg font-semibold text-white">
-              {pathway.learning_pathway?.timeline || "N/A"}
+              {pathway.learning_pathway?.timeline ||
+                pathway.learning_pathway?.total_duration ||
+                "N/A"}
             </div>
             <div className="text-xs text-gray-400">Timeline</div>
           </div>
@@ -383,7 +387,17 @@ function SavedPathwayCard({
               className="border-t border-[#2A2A2A] pt-6 mt-6"
             >
               <PathwayDisplay
-                pathway={pathway.learning_pathway}
+                pathway={
+                  {
+                    ...pathway.learning_pathway,
+                    topic: pathway.topic,
+                    timeline:
+                      pathway.learning_pathway.timeline ||
+                      pathway.learning_pathway.total_duration ||
+                      "Unknown",
+                    steps: pathway.learning_pathway.steps || [],
+                  } as unknown as Pathway
+                }
                 toggleItemCompletion={(itemId: string) =>
                   toggleItemCompletion(pathway.pathway_id, itemId)
                 }
@@ -416,7 +430,7 @@ interface SavedPathwaysListProps {
   isItemCompleted: (pathwayId: string, itemId: string) => boolean;
   getProgressStats: (
     pathwayId: string,
-    pathway?: any
+    pathway?: LearningPathway
   ) => {
     completed: number;
     total: number;
