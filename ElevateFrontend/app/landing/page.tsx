@@ -9,7 +9,7 @@ import TheProblem from "./components/TheProblem";
 
 export default function LandingPage() {
   return (
-    <div>
+    <div className="bg-[#1A1A1A] min-h-screen">
       <Navbar />
       <div id="home">
         <Hero />
@@ -17,7 +17,7 @@ export default function LandingPage() {
       <div id="features">
         <Features />
       </div>
-      <div id="steps">
+      <div id="How">
         <HowItWorks />
       </div>
       <div id="problem">

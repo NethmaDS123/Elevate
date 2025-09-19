@@ -3,42 +3,38 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useSidebar } from "@/components/SidebarContext";
-import { useLearningPaths } from "./LearningPathsLogic";
+import { useSavedLearningPaths } from "./SavedLearningPathsLogic";
 import {
   LoadingState,
   UnauthenticatedState,
-  LearningPathsHeader,
-  SearchForm,
-  ExampleTopics,
-  PathwayDisplay,
-} from "./LearningPathsComponents";
+  SavedPathwaysHeader,
+  SavedPathwaysList,
+  EmptyState,
+} from "./SavedLearningPathsComponents";
 
-export default function LearningPathwaysPage() {
+export default function SavedLearningPathwaysPage() {
   const { isOpen } = useSidebar();
   const {
     // State
-    searchTopic,
-    setSearchTopic,
+    savedPathways,
     loading,
     error,
-    pathway,
     session,
     status,
+    expandedPathway,
+    setExpandedPathway,
 
     // Actions
-    handleSearchSubmit,
-    handleExampleClick,
-    savePathway,
-
-    // Save states
-    isSaving,
-    isSaved,
+    fetchSavedPathways,
+    deletePathway,
+    updateProgress,
 
     // Progress tracking
+    completedItems,
     toggleItemCompletion,
     isItemCompleted,
     getProgressStats,
-  } = useLearningPaths();
+  } = useSavedLearningPaths();
 
   // Render loading state if session status is loading
   if (status === "loading") {
@@ -61,31 +57,34 @@ export default function LearningPathwaysPage() {
       <div className="absolute top-0 left-0 w-96 h-96 bg-[#8B5CF6]/5 rounded-full filter blur-3xl opacity-30"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-[#22C55E]/5 rounded-full filter blur-3xl opacity-30"></div>
 
-      <div className="max-w-5xl mx-auto relative z-10">
-        <LearningPathsHeader />
+      <div className="max-w-6xl mx-auto relative z-10">
+        <SavedPathwaysHeader />
 
-        {/* Search Form */}
-        <SearchForm
-          searchTopic={searchTopic}
-          setSearchTopic={setSearchTopic}
-          handleSearchSubmit={handleSearchSubmit}
-          loading={loading}
-          error={error}
-        />
-
-        {/* Examples */}
-        <ExampleTopics handleExampleClick={handleExampleClick} />
-
-        {/* Render Pathway */}
-        {pathway && (
-          <PathwayDisplay
-            pathway={pathway}
+        {loading ? (
+          <LoadingState />
+        ) : error ? (
+          <div className="text-center p-8">
+            <p className="text-red-400 text-lg">{error}</p>
+            <button
+              onClick={fetchSavedPathways}
+              className="mt-4 px-6 py-2 bg-[#8B5CF6] text-white rounded-lg hover:bg-[#7C3AED] transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        ) : savedPathways.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <SavedPathwaysList
+            savedPathways={savedPathways}
+            expandedPathway={expandedPathway}
+            setExpandedPathway={setExpandedPathway}
+            deletePathway={deletePathway}
+            updateProgress={updateProgress}
+            completedItems={completedItems}
             toggleItemCompletion={toggleItemCompletion}
             isItemCompleted={isItemCompleted}
             getProgressStats={getProgressStats}
-            onSavePathway={savePathway}
-            isSaving={isSaving}
-            isSaved={isSaved}
           />
         )}
       </div>

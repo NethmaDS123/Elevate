@@ -50,7 +50,7 @@ export default function Benefits() {
           <h2 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">
             Strategic Advantages
           </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto mt-4">
+          <p className="text-xl text-gray-400 max-w-2xl mx-auto mt-4">
             Leverage cutting-edge technology to gain a competitive edge in
             today&apos;s dynamic job market
           </p>
@@ -78,7 +78,7 @@ export default function Benefits() {
                   <h3 className="text-xl font-bold text-white mb-3">
                     {benefit.title}
                   </h3>
-                  <p className="text-gray-400 leading-relaxed mb-6">
+                  <p className="text-base text-gray-400 leading-relaxed mb-6">
                     {benefit.description}
                   </p>
 

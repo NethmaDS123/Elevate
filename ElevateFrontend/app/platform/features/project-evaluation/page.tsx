@@ -10,6 +10,9 @@ export default function ProjectEvaluationPage() {
   const {
     projectDescription,
     setProjectDescription,
+    selectedPersona,
+    setSelectedPersona,
+    personas,
     evaluation,
     loading,
     error,
@@ -43,6 +46,9 @@ export default function ProjectEvaluationPage() {
     <ProjectEvaluationUI
       projectDescription={projectDescription}
       setProjectDescription={setProjectDescription}
+      selectedPersona={selectedPersona}
+      setSelectedPersona={setSelectedPersona}
+      personas={personas}
       evaluation={evaluation}
       loading={loading}
       error={error}

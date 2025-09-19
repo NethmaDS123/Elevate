@@ -19,13 +19,25 @@ import {
   FiPlusCircle,
   FiBarChart2,
   FiZap,
+  FiEye,
+  FiShield,
+  FiActivity,
+  FiGitBranch,
 } from "react-icons/fi";
-import { Evaluation, colors, iconColors } from "./ProjectEvaluationLogic";
+import {
+  Evaluation,
+  EvaluationPersonas,
+  colors,
+  iconColors,
+} from "./ProjectEvaluationLogic";
 
 // Define the props for the ProjectEvaluationUI component
 interface ProjectEvaluationUIProps {
   projectDescription: string;
   setProjectDescription: (value: string) => void;
+  selectedPersona: string;
+  setSelectedPersona: (value: string) => void;
+  personas: EvaluationPersonas;
   evaluation: Evaluation | null;
   loading: boolean;
   error: string;
@@ -41,9 +53,19 @@ const iconComponents: Record<string, JSX.Element> = {
   industry_relevance: <FiUsers className="w-5 h-5 mr-2" />,
 };
 
+// Map of persona icons
+const personaIcons: Record<string, JSX.Element> = {
+  venture_capitalist: <FiDollarSign className="w-5 h-5" />,
+  senior_engineer: <FiCpu className="w-5 h-5" />,
+  product_manager: <FiUsers className="w-5 h-5" />,
+};
+
 export function ProjectEvaluationUI({
   projectDescription,
   setProjectDescription,
+  selectedPersona,
+  setSelectedPersona,
+  personas,
   evaluation,
   loading,
   error,
@@ -57,6 +79,12 @@ export function ProjectEvaluationUI({
       textareaRef.current.focus();
     }
   }, []);
+
+  // Debug log for personas
+  useEffect(() => {
+    console.log("Current personas in UI:", personas);
+    console.log("Selected persona:", selectedPersona);
+  }, [personas, selectedPersona]);
 
   return (
     <div className="min-h-screen bg-[#1A1A1A] py-12 px-4 sm:px-6 lg:px-8 relative">
@@ -74,12 +102,96 @@ export function ProjectEvaluationUI({
             <h1 className="text-4xl font-bold text-white mb-2">
               AI Project Evaluator
             </h1>
-            <p className="text-gray-400">
+            <p className="text-gray-400 mb-2">
               Get a detailed, actionable evaluation of your software projects
             </p>
+            <AnimatePresence mode="wait">
+              {selectedPersona && personas[selectedPersona] && (
+                <motion.div
+                  key={selectedPersona}
+                  initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="bg-[#8B5CF6]/10 border border-[#8B5CF6]/30 rounded-lg p-3 max-w-md mx-auto"
+                >
+                  <p className="text-[#8B5CF6] text-sm font-medium">
+                    📝 Current Perspective:{" "}
+                    <span className="font-bold">
+                      {personas[selectedPersona].title}
+                    </span>
+                  </p>
+                  <p className="text-gray-300 text-xs mt-1">
+                    {personas[selectedPersona].description}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Persona Selection */}
+            <div className="bg-[#161616] rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-[#2A2A2A] p-6 overflow-hidden relative">
+              <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dimension.png')]" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#8B5CF6]/10 rounded-full filter blur-3xl"></div>
+
+              <label className="block text-lg font-semibold text-white mb-3 flex items-center relative z-10">
+                <div className="p-2.5 bg-[#252525] rounded-xl shadow-[0_4px_10px_rgba(0,0,0,0.15)] text-[#8B5CF6] mr-2">
+                  <FiEye className="w-5 h-5" />
+                </div>
+                Evaluation Perspective
+              </label>
+              <p className="text-gray-400 text-sm mb-4 relative z-10">
+                Choose the expert lens through which to evaluate your project
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 relative z-10">
+                {Object.entries(personas).length === 0 ? (
+                  <div className="col-span-3 text-center text-gray-400">
+                    Loading evaluation perspectives...
+                  </div>
+                ) : (
+                  Object.entries(personas).map(([key, persona]) => (
+                    <motion.button
+                      key={key}
+                      type="button"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedPersona(key)}
+                      className={`p-4 rounded-lg border-2 transition-all text-left ${
+                        selectedPersona === key
+                          ? "border-[#8B5CF6] bg-[#8B5CF6]/10"
+                          : "border-[#2A2A2A] bg-[#252525] hover:border-[#8B5CF6]/50"
+                      }`}
+                    >
+                      <div className="flex items-center mb-2">
+                        <div
+                          className={`p-2 rounded-lg mr-3 ${
+                            selectedPersona === key
+                              ? "bg-[#8B5CF6]/20 text-[#8B5CF6]"
+                              : "bg-[#1A1A1A] text-gray-400"
+                          }`}
+                        >
+                          {personaIcons[key]}
+                        </div>
+                        <h3
+                          className={`font-semibold ${
+                            selectedPersona === key
+                              ? "text-[#8B5CF6]"
+                              : "text-white"
+                          }`}
+                        >
+                          {persona.title}
+                        </h3>
+                      </div>
+                      <p className="text-gray-400 text-sm">
+                        {persona.description}
+                      </p>
+                    </motion.button>
+                  ))
+                )}
+              </div>
+            </div>
             <div className="bg-[#161616] rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-[#2A2A2A] p-6 overflow-hidden relative">
               {/* Background texture and subtle gradient */}
               <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dimension.png')]" />
@@ -96,9 +208,9 @@ export function ProjectEvaluationUI({
               </label>
               <textarea
                 id="projectDescription"
-                className="w-full h-40 px-4 py-2 bg-[#252525] border border-[#2A2A2A] text-white rounded-md focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent resize-none relative z-10"
+                className="w-full h-40 px-4 py-2 bg-[#252525] border border-[#2A2A2A] text-white placeholder-gray-400 rounded-md focus:ring-2 focus:ring-[#8B5CF6] focus:border-transparent resize-none relative z-10 font-normal"
                 placeholder="Describe your project in detail..."
-                defaultValue={projectDescription}
+                value={projectDescription}
                 onChange={(e) => {
                   console.log("Textarea value changed:", e.target.value);
                   setProjectDescription(e.target.value);
@@ -106,6 +218,10 @@ export function ProjectEvaluationUI({
                 autoComplete="off"
                 spellCheck="false"
                 ref={textareaRef}
+                style={{
+                  color: "white",
+                  backgroundColor: "#252525",
+                }}
               />
             </div>
 
@@ -422,6 +538,162 @@ export function ProjectEvaluationUI({
                         {evaluation.market_potential.monetization_options.map(
                           (option, i) => (
                             <li key={i}>{option}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Competitive Landscape */}
+              {evaluation.competitive_landscape && (
+                <motion.div
+                  whileHover={{ translateY: -2 }}
+                  className="bg-[#161616] p-6 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-[#2A2A2A] hover:border-[#06B6D4]/30 transition-all overflow-hidden relative"
+                >
+                  {/* Background texture and subtle gradient */}
+                  <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dimension.png')]" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#06B6D4]/10 rounded-full filter blur-3xl"></div>
+
+                  <h3 className="flex items-center text-xl font-semibold text-white mb-5 relative">
+                    <div className="p-2 bg-[#252525] rounded-xl text-[#06B6D4] mr-2">
+                      <FiGitBranch className="w-5 h-5" />
+                    </div>
+                    Competitive Landscape
+                  </h3>
+
+                  <div className="space-y-6">
+                    {/* Direct Competitors */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-3 flex items-center">
+                        <FiTarget className="mr-2 text-[#06B6D4]" /> Direct
+                        Competitors
+                      </h4>
+                      <div className="space-y-4">
+                        {evaluation.competitive_landscape.direct_competitors.map(
+                          (competitor, i) => (
+                            <div
+                              key={i}
+                              className="bg-[#252525] p-4 rounded-lg"
+                            >
+                              <h5 className="font-semibold text-white mb-2">
+                                {competitor.name}
+                              </h5>
+                              <p className="text-gray-300 text-sm mb-2">
+                                {competitor.positioning}
+                              </p>
+                              <p className="text-[#06B6D4] text-sm font-medium">
+                                {competitor.differentiation_strategy}
+                              </p>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Indirect Competitors */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-2 flex items-center">
+                        <FiEye className="mr-2 text-[#06B6D4]" /> Indirect
+                        Competitors
+                      </h4>
+                      <ul className="list-disc pl-6 space-y-2 text-gray-300">
+                        {evaluation.competitive_landscape.indirect_competitors.map(
+                          (competitor, i) => (
+                            <li key={i}>{competitor}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Market Position */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-2 flex items-center">
+                        <FiTrendingUp className="mr-2 text-[#06B6D4]" /> Market
+                        Position
+                      </h4>
+                      <p className="text-gray-300 pl-6">
+                        {evaluation.competitive_landscape.market_position}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Critical Risks */}
+              {evaluation.critical_risks && (
+                <motion.div
+                  whileHover={{ translateY: -2 }}
+                  className="bg-[#161616] p-6 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-[#2A2A2A] hover:border-[#EF4444]/30 transition-all overflow-hidden relative"
+                >
+                  {/* Background texture and subtle gradient */}
+                  <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/dimension.png')]" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#EF4444]/10 rounded-full filter blur-3xl"></div>
+
+                  <h3 className="flex items-center text-xl font-semibold text-white mb-5 relative">
+                    <div className="p-2 bg-[#252525] rounded-xl text-[#EF4444] mr-2">
+                      <FiShield className="w-5 h-5" />
+                    </div>
+                    Critical Risks & Red Flags
+                  </h3>
+
+                  <div className="space-y-6">
+                    {/* Founder Blind Spots */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-2 flex items-center">
+                        <FiEye className="mr-2 text-[#EF4444]" /> Founder Blind
+                        Spots
+                      </h4>
+                      <ul className="list-disc pl-6 space-y-2 text-gray-300">
+                        {evaluation.critical_risks.founder_blind_spots.map(
+                          (risk, i) => (
+                            <li key={i}>{risk}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Market Risks */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-2 flex items-center">
+                        <FiTarget className="mr-2 text-[#EF4444]" /> Market
+                        Risks
+                      </h4>
+                      <ul className="list-disc pl-6 space-y-2 text-gray-300">
+                        {evaluation.critical_risks.market_risks.map(
+                          (risk, i) => (
+                            <li key={i}>{risk}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Technical Risks */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-2 flex items-center">
+                        <FiActivity className="mr-2 text-[#EF4444]" /> Technical
+                        Risks
+                      </h4>
+                      <ul className="list-disc pl-6 space-y-2 text-gray-300">
+                        {evaluation.critical_risks.technical_risks.map(
+                          (risk, i) => (
+                            <li key={i}>{risk}</li>
+                          )
+                        )}
+                      </ul>
+                    </div>
+
+                    {/* Business Model Risks */}
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-2 flex items-center">
+                        <FiDollarSign className="mr-2 text-[#EF4444]" />{" "}
+                        Business Model Risks
+                      </h4>
+                      <ul className="list-disc pl-6 space-y-2 text-gray-300">
+                        {evaluation.critical_risks.business_model_risks.map(
+                          (risk, i) => (
+                            <li key={i}>{risk}</li>
                           )
                         )}
                       </ul>

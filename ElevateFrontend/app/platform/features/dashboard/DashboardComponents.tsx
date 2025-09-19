@@ -43,13 +43,22 @@ export function LearningPathwaysPreview({
           </div>
           Learning Pathways
         </h2>
-        <Link
-          href="/platform/features/learning-paths"
-          className="text-gray-400 flex items-center gap-1 group-hover:text-[#8B5CF6] transition-colors text-sm"
-        >
-          View All
-          <FiChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/platform/features/saved-learning-paths"
+            className="text-gray-400 flex items-center gap-1 hover:text-[#22C55E] transition-colors text-sm"
+          >
+            Saved Paths
+            <FiChevronRight className="w-4 h-4 hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <Link
+            href="/platform/features/learning-paths"
+            className="text-gray-400 flex items-center gap-1 group-hover:text-[#8B5CF6] transition-colors text-sm"
+          >
+            View All
+            <FiChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        </div>
       </div>
 
       {/* Learning paths list with hover animations */}

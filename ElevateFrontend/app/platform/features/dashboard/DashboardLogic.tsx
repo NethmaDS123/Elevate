@@ -3,7 +3,14 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSidebar } from "@/components/SidebarContext";
-import { FiZap, FiCode, FiBriefcase, FiLayers } from "react-icons/fi";
+import {
+  FiZap,
+  FiCode,
+  FiBriefcase,
+  FiLayers,
+  FiMail,
+  FiFileText,
+} from "react-icons/fi";
 import { ReactNode } from "react";
 
 // Define the structure of the dashboard response
@@ -44,6 +51,20 @@ export function useDashboardData() {
 
   // Static quick actions for the dashboard
   const staticQuickActions: QuickAction[] = [
+    {
+      icon: <FiMail />,
+      title: "Cover Letter Generator",
+      link: "/platform/features/cover-letters",
+      bgColor: "bg-[#252525]",
+      textColor: "text-[#8B5CF6]",
+    },
+    {
+      icon: <FiFileText />,
+      title: "Saved Cover Letters",
+      link: "/platform/features/saved-cover-letters",
+      bgColor: "bg-[#252525]",
+      textColor: "text-[#22C55E]",
+    },
     {
       icon: <FiZap />,
       title: "Project Ideas",

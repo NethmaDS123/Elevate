@@ -13,6 +13,13 @@ import {
   FiCheckCircle,
   FiArrowUpRight,
   FiUsers,
+  FiMail,
+  FiZap,
+  FiCode,
+  FiBriefcase,
+  FiUser,
+  FiFolder,
+  FiHeart,
 } from "react-icons/fi";
 import { useSidebar } from "./SidebarContext";
 
@@ -34,9 +41,9 @@ export default function Sidebar() {
       >
         <motion.div
           animate={{ rotate: isOpen ? 0 : 360 }}
-          className="w-8 h-8 bg-gradient-to-br from-[#8B5CF6] to-[#22C55E] rounded-lg flex-shrink-0 flex items-center justify-center"
+          className="w-8 h-8 bg-gradient-to-br from-[#8B5CF6] to-[#22C55E] rounded-full flex-shrink-0 flex items-center justify-center border border-white/10 shadow-lg"
         >
-          <FiArrowUpRight className="text-white w-4 h-4" />
+          <span className="text-white font-bold text-sm">E</span>
         </motion.div>
         <motion.span
           animate={{ opacity: isOpen ? 1 : 0 }}
@@ -62,13 +69,20 @@ export default function Sidebar() {
           isActive={pathname === "/platform/features/resume-optimizer"}
         />
         <SidebarLink
+          href="/platform/features/cover-letters"
+          icon={<FiMail />}
+          label="Cover Letters"
+          isOpen={isOpen}
+          isActive={pathname === "/platform/features/cover-letters"}
+        />
+
+        <SidebarLink
           href="/platform/features/project-evaluation"
           icon={<FiClipboard />}
           label="Project Evaluation"
           isOpen={isOpen}
           isActive={pathname === "/platform/features/project-evaluation"}
         />
-
         <SidebarLink
           href="/platform/features/interview-prep"
           icon={<FiCheckCircle />}
@@ -90,12 +104,13 @@ export default function Sidebar() {
           isOpen={isOpen}
           isActive={pathname === "/platform/features/skill-gap-analysis"}
         />
+
         <SidebarLink
-          href="/platform/features/role-transition"
-          icon={<FiArrowUpRight />}
-          label="Role Transition"
+          href="/platform/features/job-tracker"
+          icon={<FiBriefcase />}
+          label="Job Tracker"
           isOpen={isOpen}
-          isActive={pathname === "/platform/features/role-transition"}
+          isActive={pathname === "/platform/features/job-tracker"}
         />
 
         <div className="pt-4 mt-4 border-t border-[#2A2A2A]">

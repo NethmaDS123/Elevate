@@ -1,148 +1,58 @@
 // components/Footer.tsx
 "use client";
 import { motion } from "framer-motion";
-import {
-  FiGithub,
-  FiTwitter,
-  FiLinkedin,
-  FiMail,
-  FiActivity,
-  FiBookOpen,
-} from "react-icons/fi";
-import Link from "next/link";
+import { FiZap } from "react-icons/fi";
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 border-t border-gray-800">
-      <div className="max-w-7xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-          {/* Brand Column */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
-            <h3 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+    <footer className="bg-white border-t border-gray-100 relative overflow-hidden">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-[0.01] [background-image:linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:120px_120px]" />
+
+      <div className="max-w-6xl mx-auto py-12 px-6 relative z-10">
+        {/* Main Content */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-8"
+        >
+          <div className="flex items-center justify-center gap-2.5 mb-4">
+            <div className="w-6 h-6 rounded bg-black flex items-center justify-center">
+              <span className="text-white font-space font-semibold text-xs">
+                E
+              </span>
+            </div>
+            <div className="text-lg font-space font-medium text-black tracking-tight">
               Elevate
-            </h3>
-            <p className="text-gray-400 text-sm max-w-xs">
-              Bridging the gap between academic knowledge and industry
-              requirements through AI-powered career development tools.
-            </p>
-          </motion.div>
-
-          {/* Resources Column */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="space-y-4"
-          >
-            <h4 className="text-sm font-semibold text-gray-300 uppercase mb-2">
-              Resources
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link
-                  href="/docs"
-                  className="text-gray-400 hover:text-white text-sm transition flex items-center gap-2"
-                >
-                  <FiBookOpen className="w-4 h-4" />
-                  Documentation
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/github"
-                  className="text-gray-400 hover:text-white text-sm transition flex items-center gap-2"
-                >
-                  <FiGithub className="w-4 h-4" />
-                  GitHub Repository
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/status"
-                  className="text-gray-400 hover:text-white text-sm transition flex items-center gap-2"
-                >
-                  <FiActivity className="w-4 h-4" />
-                  System Status
-                </Link>
-              </li>
-            </ul>
-          </motion.div>
-
-          {/* Connect Column */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-4"
-          >
-            <h4 className="text-sm font-semibold text-gray-300 uppercase mb-2">
-              Connect
-            </h4>
-            <div className="flex gap-4">
-              <Link
-                href="https://twitter.com"
-                className="text-gray-400 hover:text-blue-400 transition"
-              >
-                <FiTwitter className="w-5 h-5" />
-              </Link>
-              <Link
-                href="https://linkedin.com"
-                className="text-gray-400 hover:text-blue-400 transition"
-              >
-                <FiLinkedin className="w-5 h-5" />
-              </Link>
-              <Link
-                href="https://github.com"
-                className="text-gray-400 hover:text-blue-400 transition"
-              >
-                <FiGithub className="w-5 h-5" />
-              </Link>
             </div>
-
-            <div className="mt-4">
-              <Link
-                href="mailto:support@elevate.com"
-                className="text-gray-400 hover:text-white text-sm transition flex items-center gap-2"
-              >
-                <FiMail className="w-4 h-4" />
-                support@elevate.com
-              </Link>
-            </div>
-          </motion.div>
-        </div>
+          </div>
+          <p className="text-sm font-inter text-gray-600 max-w-md mx-auto leading-relaxed">
+            AI-powered career development tools for ambitious developers
+          </p>
+        </motion.div>
 
         {/* Divider */}
-        <div className="border-t border-gray-800 mb-8" />
+        <div className="border-t border-gray-100 mb-6" />
 
         {/* Bottom Row */}
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
           className="flex flex-col md:flex-row justify-between items-center gap-4"
         >
-          <p className="text-gray-500 text-sm text-center">
-            © {new Date().getFullYear()} Elevate. Empowering tech careers
-            worldwide.
+          <p className="text-xs font-mono text-gray-500 text-center uppercase tracking-wide">
+            © {new Date().getFullYear()} ELEVATE. BUILT FOR DEVELOPERS.
           </p>
 
-          <div className="flex items-center gap-4">
-            <Link
-              href="/privacy"
-              className="text-gray-500 hover:text-gray-300 text-sm transition"
-            >
-              Privacy Policy
-            </Link>
-            <span className="text-gray-600">•</span>
-            <Link
-              href="/terms"
-              className="text-gray-500 hover:text-gray-300 text-sm transition"
-            >
-              Terms of Service
-            </Link>
+          <div className="flex items-center gap-6">
+            <span className="text-xs font-mono text-gray-500 uppercase tracking-wide">
+              Privacy
+            </span>
+            <span className="text-xs font-mono text-gray-500 uppercase tracking-wide">
+              Terms
+            </span>
           </div>
         </motion.div>
 
@@ -150,15 +60,15 @@ export default function Footer() {
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          className="mt-8 text-center"
+          viewport={{ once: true }}
+          className="mt-6 text-center"
         >
-          <p className="text-xs text-gray-600">
-            Supported by the{" "}
-            <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              Ignite Fund
-            </span>{" "}
-            for educational technology
-          </p>
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gray-50 rounded-md border border-gray-150">
+            <FiZap className="h-3 w-3 text-gray-500" />
+            <span className="text-xs font-mono text-gray-600 tracking-wide uppercase">
+              Funded by the Ignite Fund
+            </span>
+          </div>
         </motion.div>
       </div>
     </footer>

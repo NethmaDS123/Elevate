@@ -25,7 +25,6 @@ export default function RootLayout({
               <Analytics /> {/* Vercel analytics */}
             </main>
           </SessionProvider>
-          <Footer />
         </div>
       </body>
     </html>

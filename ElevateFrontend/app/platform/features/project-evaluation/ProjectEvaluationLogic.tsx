@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
 // Define the structure of the Evaluation object
@@ -26,10 +26,36 @@ export interface Evaluation {
     competitive_advantage: string;
     monetization_options: string[];
   };
+  competitive_landscape: {
+    direct_competitors: Array<{
+      name: string;
+      positioning: string;
+      differentiation_strategy: string;
+    }>;
+    indirect_competitors: string[];
+    market_position: string;
+  };
+  critical_risks: {
+    founder_blind_spots: string[];
+    market_risks: string[];
+    technical_risks: string[];
+    business_model_risks: string[];
+  };
   resume_mention: {
     include: boolean;
     justification: string;
   };
+}
+
+// Define the structure of evaluation personas
+export interface EvaluationPersona {
+  title: string;
+  description: string;
+  expertise: string;
+}
+
+export interface EvaluationPersonas {
+  [key: string]: EvaluationPersona;
 }
 
 // Define icons for each evaluation category
@@ -62,6 +88,30 @@ export const iconColors: Record<string, string> = {
 export function useProjectEvaluation() {
   const { data: session, status } = useSession(); // Use the session hook to get the session data and status
   const [projectDescription, setProjectDescription] = useState(""); // State for project description
+  const [selectedPersona, setSelectedPersona] = useState("venture_capitalist"); // State for selected persona
+  const [personas, setPersonas] = useState<EvaluationPersonas>({
+    venture_capitalist: {
+      title: "Venture Capitalist",
+      description:
+        "Ruthless focus on market size, competitive moats, scalability, and monetization potential",
+      expertise:
+        "25+ years in venture capital with successful exits in tech startups",
+    },
+    senior_engineer: {
+      title: "Senior Engineering Manager",
+      description:
+        "Technical rigor, code quality, architectural decisions, and hiring potential",
+      expertise:
+        "20+ years as a principal engineer and engineering manager at FAANG companies",
+    },
+    product_manager: {
+      title: "Senior Product Manager",
+      description:
+        "User problems, feature cohesiveness, market fit, and user experience",
+      expertise:
+        "15+ years building successful consumer and B2B products at top tech companies",
+    },
+  }); // State for available personas with defaults
 
   // Function to update project description
   const updateProjectDescription = useCallback((value: string) => {
@@ -71,6 +121,35 @@ export function useProjectEvaluation() {
   const [evaluation, setEvaluation] = useState<Evaluation | null>(null); // State for evaluation data
   const [loading, setLoading] = useState(false); // State for loading indicator
   const [error, setError] = useState(""); // State for error message
+
+  // Fetch available personas on component mount
+  const fetchPersonas = useCallback(async () => {
+    try {
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        "https://elevatebackend.onrender.com";
+      console.log(
+        "Fetching personas from:",
+        `${backendUrl}/evaluation_personas`
+      );
+      const res = await fetch(`${backendUrl}/evaluation_personas`);
+      console.log("Personas fetch response:", res.status, res.ok);
+      if (res.ok) {
+        const data = await res.json();
+        console.log("Fetched personas data:", data);
+        setPersonas(data.personas);
+      } else {
+        console.warn("Failed to fetch personas, using defaults");
+      }
+    } catch (err) {
+      console.error("Failed to fetch personas, using defaults:", err);
+    }
+  }, []);
+
+  // Fetch personas when component mounts
+  useEffect(() => {
+    fetchPersonas();
+  }, [fetchPersonas]);
 
   // Define a callback function for form submission
   const handleSubmit = useCallback(
@@ -90,6 +169,10 @@ export function useProjectEvaluation() {
       }
 
       setLoading(true);
+      console.log(`🚀 Starting evaluation with persona: ${selectedPersona}`);
+      console.log(
+        `📝 Project description length: ${projectDescription.length} characters`
+      );
       try {
         const backendUrl =
           process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -101,7 +184,10 @@ export function useProjectEvaluation() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${session.user.id_token}`,
           },
-          body: JSON.stringify({ project_description: projectDescription }),
+          body: JSON.stringify({
+            project_description: projectDescription,
+            persona: selectedPersona,
+          }),
         });
         const data = await res.json(); // Parse the response as JSON
         if (res.ok) {
@@ -116,12 +202,15 @@ export function useProjectEvaluation() {
         setLoading(false);
       }
     },
-    [projectDescription, session] // Dependencies for the useCallback hook
+    [projectDescription, selectedPersona, session] // Dependencies for the useCallback hook
   );
 
   return {
     projectDescription,
     setProjectDescription: updateProjectDescription,
+    selectedPersona,
+    setSelectedPersona,
+    personas,
     evaluation,
     loading,
     error,

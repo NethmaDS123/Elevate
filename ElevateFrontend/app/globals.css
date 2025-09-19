@@ -4,12 +4,20 @@
 @tailwind utilities;
 
 /* Custom Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 
+* {
+  box-sizing: border-box;
+}
+
+html,
 body {
   font-family: "Inter", sans-serif;
-  background-color: #ffffff; /* White background */
-  color: #1a1a1a; /* Dark text for contrast */
+  background-color: #1a1a1a; /* Dark background */
+  color: #ffffff; /* Light text for dark theme */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 /* Smooth scroll */
@@ -21,18 +29,24 @@ html {
 button:focus,
 a:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
 }
 
-/* Gradient background for sections */
+/* Dark theme gradient backgrounds */
 .gradient-bg {
-  background: linear-gradient(135deg, #f9fafb, #ffffff);
+  background: linear-gradient(135deg, #1a1a1a, #161616);
 }
 
-/* Section separations */
-.section-separator {
-  border-bottom: 1px solid #e5e7eb; /* Soft gray border */
+.gradient-bg-light {
+  background: linear-gradient(135deg, #252525, #2a2a2a);
 }
+
+/* Section separations for dark theme */
+.section-separator {
+  border-bottom: 1px solid #2a2a2a;
+}
+
+/* Custom animations */
 @keyframes sparkle {
   0% {
     opacity: 0;
@@ -50,4 +64,180 @@ a:focus {
 
 .animate-sparkle {
   animation: sparkle 1.5s infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* Button styles */
+.btn-primary {
+  background: linear-gradient(135deg, #8b5cf6, #22c55e);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #7c3aed, #16a34a);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
+.btn-secondary {
+  background: #252525;
+  border: 1px solid #2a2a2a;
+  padding: 12px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: #2a2a2a;
+  border-color: #8b5cf6;
+  transform: translateY(-2px);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(22, 22, 22, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Text selection */
+::selection {
+  background-color: rgba(139, 92, 246, 0.3);
+  color: white;
+}
+
+/* Scrollbar styling for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #333333;
+}
+
+/* Loading animations */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(90deg, #1a1a1a 25%, #252525 50%, #1a1a1a 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Dark theme overrides for specific elements */
+input,
+textarea,
+select {
+  background-color: #252525 !important;
+  border: 1px solid #2a2a2a !important;
+  color: white !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Code blocks */
+pre,
+code {
+  background-color: #161616 !important;
+  color: #ffffff !important;
+  border: 1px solid #2a2a2a !important;
+}
+
+/* Tables */
+table {
+  background-color: #161616 !important;
+  color: white !important;
+}
+
+th,
+td {
+  border-color: #2a2a2a !important;
+}
+
+/* Utility classes for consistent spacing */
+.section-padding {
+  padding: 80px 0;
+}
+
+.container-custom {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Performance optimizations */
+.will-change-transform {
+  will-change: transform;
+}
+
+.gpu-acceleration {
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
