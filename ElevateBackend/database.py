@@ -165,3 +165,117 @@ def store_skill_benchmark(user_id: str, data: dict):
 
 def fetch_skill_benchmark(user_id: str):
     return fetch_latest_feature(user_id, "skillBenchmark")
+
+# Cover Letter Storage
+def store_cover_letter(user_id: str, data: dict):
+    """Store a saved cover letter for a user"""
+    store_user_feature(user_id, "savedCoverLetters", data)
+
+def fetch_saved_cover_letters(user_id: str):
+    """Fetch all saved cover letters for a user"""
+    if DEVELOPMENT_MODE:
+        logger.info(f"Development mode: returning mock saved cover letters for user {user_id}")
+        return []
+    
+    try:
+        user_doc = users_collection.find_one({"_id": user_id}, {"features.savedCoverLetters": 1})
+        if user_doc and "features" in user_doc and "savedCoverLetters" in user_doc["features"]:
+            # Sort by creation date, newest first
+            cover_letters = user_doc["features"]["savedCoverLetters"]
+            # Convert datetime objects to ISO format strings for JSON serialization
+            for letter in cover_letters:
+                if "createdAt" in letter and isinstance(letter["createdAt"], datetime):
+                    letter["createdAt"] = letter["createdAt"].isoformat()
+                if "updatedAt" in letter and isinstance(letter["updatedAt"], datetime):
+                    letter["updatedAt"] = letter["updatedAt"].isoformat()
+            return sorted(cover_letters, key=lambda x: x.get("createdAt", ""), reverse=True)
+        return []
+    except Exception as e:
+        logger.error(f"Error fetching saved cover letters for user {user_id}: {str(e)}")
+        return []
+
+def delete_cover_letter(user_id: str, cover_letter_id: str):
+    """Delete a specific saved cover letter"""
+    if DEVELOPMENT_MODE:
+        logger.info(f"Development mode: mock deleting cover letter {cover_letter_id} for user {user_id}")
+        return True
+    
+    try:
+        result = users_collection.update_one(
+            {"_id": user_id},
+            {"$pull": {"features.savedCoverLetters": {"cover_letter_id": cover_letter_id}}}
+        )
+        return result.modified_count > 0
+    except Exception as e:
+        logger.error(f"Error deleting cover letter {cover_letter_id} for user {user_id}: {str(e)}")
+        return False
+
+# Saved Learning Pathways
+def save_learning_pathway(user_id: str, data: dict):
+    """Save a learning pathway for persistent tracking"""
+    store_user_feature(user_id, "savedLearningPathways", data)
+
+def fetch_saved_learning_pathways(user_id: str):
+    """Fetch all saved learning pathways for a user"""
+    if DEVELOPMENT_MODE:
+        logger.info(f"Development mode: returning mock saved learning pathways for user {user_id}")
+        return []
+    
+    try:
+        user_doc = users_collection.find_one({"_id": user_id}, {"features.savedLearningPathways": 1})
+        if user_doc and "features" in user_doc and "savedLearningPathways" in user_doc["features"]:
+            pathways = user_doc["features"]["savedLearningPathways"]
+            # Convert datetime objects to ISO format strings for JSON serialization
+            for pathway in pathways:
+                def convert_datetime_to_iso(obj):
+                    """Recursively convert datetime objects to ISO format strings"""
+                    if isinstance(obj, datetime):
+                        return obj.isoformat()
+                    elif isinstance(obj, dict):
+                        return {k: convert_datetime_to_iso(v) for k, v in obj.items()}
+                    elif isinstance(obj, list):
+                        return [convert_datetime_to_iso(item) for item in obj]
+                    else:
+                        return obj
+                
+                # Convert all datetime objects in the pathway
+                for key, value in pathway.items():
+                    pathway[key] = convert_datetime_to_iso(value)
+            return sorted(pathways, key=lambda x: x.get("createdAt", ""), reverse=True)
+        return []
+    except Exception as e:
+        logger.error(f"Error fetching saved learning pathways for user {user_id}: {str(e)}")
+        return []
+
+def update_pathway_progress(user_id: str, pathway_id: str, progress_data: dict):
+    """Update progress for a specific saved learning pathway"""
+    if DEVELOPMENT_MODE:
+        logger.info(f"Development mode: updating progress for pathway {pathway_id} for user {user_id}")
+        return True
+    
+    try:
+        progress_data["updatedAt"] = datetime.utcnow()
+        result = users_collection.update_one(
+            {"_id": user_id, "features.savedLearningPathways.pathway_id": pathway_id},
+            {"$set": {"features.savedLearningPathways.$.progress": progress_data}}
+        )
+        return result.modified_count > 0
+    except Exception as e:
+        logger.error(f"Error updating pathway progress for user {user_id}: {str(e)}")
+        return False
+
+def delete_saved_pathway(user_id: str, pathway_id: str):
+    """Delete a specific saved learning pathway"""
+    if DEVELOPMENT_MODE:
+        logger.info(f"Development mode: mock deleting pathway {pathway_id} for user {user_id}")
+        return True
+    
+    try:
+        result = users_collection.update_one(
+            {"_id": user_id},
+            {"$pull": {"features.savedLearningPathways": {"pathway_id": pathway_id}}}
+        )
+        return result.modified_count > 0
+    except Exception as e:
+        logger.error(f"Error deleting saved pathway {pathway_id} for user {user_id}: {str(e)}")
+        return False

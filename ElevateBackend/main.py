@@ -4,16 +4,23 @@ import uuid
 import asyncio
 import logging
 from datetime import datetime, UTC
+import json
 
 from fastapi import FastAPI, Request, Header, HTTPException, status, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
-import json 
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Custom JSON encoder to handle datetime objects
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)
 
 # Check for required environment variables
 required_env_vars = ["OPENAI_API_KEY", "MONGODB_URI"]
@@ -42,6 +49,8 @@ from features.interview_preparation import InterviewPreparation
 from features.role_transition import RoleTransition 
 from features.skill_benchmark import SkillBenchmark
 from features.resume_extraction import ResumeExtractor
+from features.cover_letter_generator import cover_letter_generator
+from features.saved_learning_pathways import SavedLearningPathways
 from database import (
     fetch_learning_pathway_results,
     fetch_optimization_results,
@@ -52,6 +61,9 @@ from database import (
     store_interview_feedback,
     store_role_transition,
     store_skill_benchmark,
+    store_cover_letter,
+    fetch_saved_cover_letters,
+    delete_cover_letter,
     users_collection 
 )
 from auth import verify_google_token  
@@ -78,6 +90,38 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Override the default JSONResponse class to use our custom encoder
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=exc.headers,
+    )
+
+# Custom JSONResponse middleware to handle datetime objects
+@app.middleware("http")
+async def custom_json_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if isinstance(response, JSONResponse):
+        # Get the response content
+        content = response.body
+        try:
+            # Parse the content
+            decoded = json.loads(content)
+            # Re-encode with our custom encoder
+            encoded = json.dumps(decoded, cls=DateTimeEncoder)
+            # Create a new response with the encoded content
+            return JSONResponse(
+                status_code=response.status_code,
+                content=json.loads(encoded),
+                headers=dict(response.headers),
+            )
+        except:
+            # If there's an error, return the original response
+            pass
+    return response
+
 # Root endpoint to check if the server is running
 @app.get("/")
 @app.head("/")
@@ -94,6 +138,7 @@ interview_preparation_instance   = InterviewPreparation()
 role_transition_instance  = RoleTransition()
 skill_benchmark_instance = SkillBenchmark()
 resume_extractor = ResumeExtractor()
+saved_pathways_instance = SavedLearningPathways()
 
 # Setting the maximum number of concurrent tasks
 MAX_CONCURRENT_TASKS = 5
@@ -160,8 +205,15 @@ async def get_dashboard(authorization: str = Header(None)):
         "learningPaths": learning_paths,
     }
 # ----------------
-# Project Evaluation Endpoint
+# Project Evaluation Endpoints
 # ----------------
+
+@app.get("/evaluation_personas")
+async def get_evaluation_personas():
+    """Get available evaluation personas for project evaluation."""
+    return {
+        "personas": project_evaluator.evaluation_personas
+    }
 
 @app.post("/evaluate_project")
 async def evaluate_project(request: Request, authorization: str = Header(None)):
@@ -179,9 +231,10 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
         logger.warning(f"[unauthenticated] evaluate_project blocked: {e}")
         raise HTTPException(status_code=401, detail="Invalid authentication token") from e
 
-    # Extract project description from request body
+    # Extract project description and persona from request body
     body = await request.json()
     project_description = body.get("project_description")
+    persona = body.get("persona", "venture_capitalist")  # Default to VC persona
     if not project_description:
         raise HTTPException(status_code=400, detail="Project description is required.")
 
@@ -193,6 +246,7 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
     store_evaluation_result(user_id, {
         "evaluation_id": evaluation_id,
         "project_description": project_description,
+        "persona": persona,
         "status": "processing",
         "createdAt": timestamp,
         "updatedAt": timestamp
@@ -208,7 +262,8 @@ async def evaluate_project(request: Request, authorization: str = Header(None)):
                 None,
                 project_evaluator.evaluate,
                 user_id,
-                project_description
+                project_description,
+                persona
             )
 
             logger.info(f"[{user_id}] Completed project evaluation (id={evaluation_id}) — score={evaluation.get('overall_score')}")
@@ -751,6 +806,385 @@ async def extract_resume_text(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to extract text from resume: {str(e)}"
+        )
+
+# ----------------
+# Cover Letter Generation Endpoint
+# ----------------
+@app.post("/generate_cover_letter")
+async def generate_cover_letter_endpoint(request: Request, authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on generate_cover_letter")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    # Extract resume_text and job_description from request body
+    body = await request.json()
+    resume_text = body.get("resume_text")
+    job_description = body.get("job_description")
+    
+    # Validate if both resume_text and job_description are provided
+    if not resume_text or not job_description:
+        raise HTTPException(
+            status_code=400,
+            detail="Both `resume_text` and `job_description` are required."
+        )
+
+    try:
+        logger.info(f"[{user_id}] Starting cover letter generation")
+        
+        # Generate the cover letter using the CoverLetterGenerator
+        result = cover_letter_generator.generate_cover_letter(
+            resume_text=resume_text,
+            job_description=job_description
+        )
+        
+        logger.info(f"[{user_id}] Cover letter generation completed successfully")
+        
+        # Return the generated cover letter data (enhanced narrative format)
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "cover_letter": result["cover_letter"],
+                "narrative_strengths": result["narrative_strengths"],
+                "research_depth": result["research_depth"],
+                "improvement_suggestions": result["improvement_suggestions"],
+                "story_flow_score": result["story_flow_score"],
+                "alignment_explanation": result["alignment_explanation"],
+                "generated_at": datetime.now(UTC).isoformat()
+            }
+        )
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Cover letter generation failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate cover letter: {str(e)}"
+        )
+
+# ----------------
+# Save Cover Letter Endpoint
+# ----------------
+@app.post("/save_cover_letter")
+async def save_cover_letter_endpoint(request: Request, authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on save_cover_letter")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    # Extract data from request body
+    body = await request.json()
+    cover_letter_content = body.get("cover_letter")
+    company_name = body.get("company_name")
+    job_title = body.get("job_title")
+    
+    # Validate required fields
+    if not cover_letter_content or not company_name or not job_title:
+        raise HTTPException(
+            status_code=400,
+            detail="cover_letter, company_name, and job_title are all required."
+        )
+
+    try:
+        logger.info(f"[{user_id}] Saving cover letter for {company_name} - {job_title}")
+        
+        # Generate unique ID and timestamp
+        cover_letter_id = str(uuid.uuid4())
+        now = datetime.now(UTC).isoformat()  # Store as ISO format string instead of datetime object
+        
+        # Prepare cover letter data
+        cover_letter_data = {
+            "cover_letter_id": cover_letter_id,
+            "company_name": company_name,
+            "job_title": job_title,
+            "cover_letter_content": cover_letter_content,
+            "createdAt": now,
+            "updatedAt": now
+        }
+        
+        # Store the cover letter
+        store_cover_letter(user_id, cover_letter_data)
+        
+        logger.info(f"[{user_id}] Cover letter saved successfully with ID: {cover_letter_id}")
+        
+        return JSONResponse(
+            status_code=200,
+            content={
+                "success": True,
+                "cover_letter_id": cover_letter_id,
+                "message": "Cover letter saved successfully"
+            }
+        )
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to save cover letter: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save cover letter: {str(e)}"
+        )
+
+# ----------------
+# Get Saved Cover Letters Endpoint
+# ----------------
+@app.get("/saved_cover_letters")
+async def get_saved_cover_letters_endpoint(authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on get_saved_cover_letters")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    try:
+        logger.info(f"[{user_id}] Fetching saved cover letters")
+        
+        # Fetch saved cover letters
+        cover_letters = fetch_saved_cover_letters(user_id)
+        
+        logger.info(f"[{user_id}] Found {len(cover_letters)} saved cover letters")
+        
+        # Use custom JSON encoder for datetime objects
+        content = {
+            "success": True,
+            "cover_letters": cover_letters
+        }
+        
+        # Return the JSON response with custom encoder
+        return JSONResponse(
+            status_code=200,
+            content=content,
+            media_type="application/json"
+        )
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to fetch saved cover letters: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch saved cover letters: {str(e)}"
+        )
+
+# ----------------
+# Delete Cover Letter Endpoint
+# ----------------
+@app.delete("/delete_cover_letter/{cover_letter_id}")
+async def delete_cover_letter_endpoint(cover_letter_id: str, authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on delete_cover_letter")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    try:
+        logger.info(f"[{user_id}] Deleting cover letter: {cover_letter_id}")
+        
+        # Delete the cover letter
+        success = delete_cover_letter(user_id, cover_letter_id)
+        
+        if success:
+            logger.info(f"[{user_id}] Cover letter deleted successfully: {cover_letter_id}")
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "success": True,
+                    "message": "Cover letter deleted successfully"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Cover letter not found or could not be deleted"
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to delete cover letter: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete cover letter: {str(e)}"
+        )
+
+# ----------------
+# Saved Learning Pathways Endpoints
+# ----------------
+@app.post("/save_learning_pathway")
+async def save_learning_pathway_endpoint(request: Request, authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on save_learning_pathway")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    # Extract data from request body
+    body = await request.json()
+    pathway_data = body.get("pathway_data")
+    
+    # Validate required fields
+    if not pathway_data:
+        raise HTTPException(
+            status_code=400,
+            detail="pathway_data is required."
+        )
+
+    try:
+        logger.info(f"[{user_id}] Saving learning pathway")
+        
+        # Save the learning pathway
+        result = saved_pathways_instance.save_pathway(user_id, pathway_data)
+        
+        if result["success"]:
+            logger.info(f"[{user_id}] Learning pathway saved successfully")
+            return JSONResponse(status_code=200, content=result)
+        else:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to save learning pathway: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save learning pathway: {str(e)}"
+        )
+
+@app.get("/saved_learning_pathways")
+async def get_saved_learning_pathways_endpoint(authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on get_saved_learning_pathways")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    try:
+        logger.info(f"[{user_id}] Fetching saved learning pathways")
+        
+        # Fetch saved learning pathways
+        result = saved_pathways_instance.get_saved_pathways(user_id)
+        
+        logger.info(f"[{user_id}] Found {len(result['pathways'])} saved learning pathways")
+        
+        return JSONResponse(status_code=200, content=result)
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to fetch saved learning pathways: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch saved learning pathways: {str(e)}"
+        )
+
+@app.put("/update_pathway_progress/{pathway_id}")
+async def update_pathway_progress_endpoint(
+    pathway_id: str, 
+    request: Request, 
+    authorization: str = Header(None)
+):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on update_pathway_progress")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    # Extract progress data from request body
+    body = await request.json()
+    progress_data = body.get("progress_data")
+    
+    if not progress_data:
+        raise HTTPException(
+            status_code=400,
+            detail="progress_data is required."
+        )
+
+    try:
+        logger.info(f"[{user_id}] Updating progress for pathway: {pathway_id}")
+        
+        # Update pathway progress
+        result = saved_pathways_instance.update_progress(user_id, pathway_id, progress_data)
+        
+        if result["success"]:
+            return JSONResponse(status_code=200, content=result)
+        else:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to update pathway progress: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update pathway progress: {str(e)}"
+        )
+
+@app.delete("/delete_saved_pathway/{pathway_id}")
+async def delete_saved_pathway_endpoint(pathway_id: str, authorization: str = Header(None)):
+    # Check if authorization token is present
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authentication token.")
+    token = authorization.split("Bearer ")[-1]
+    try:
+        # Verify the token and extract user information
+        user_info = verify_google_token(token)
+        user_id = user_info["sub"]
+    except Exception:
+        logger.warning("Invalid auth token on delete_saved_pathway")
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    try:
+        logger.info(f"[{user_id}] Deleting saved pathway: {pathway_id}")
+        
+        # Delete the saved pathway
+        result = saved_pathways_instance.delete_pathway(user_id, pathway_id)
+        
+        if result["success"]:
+            logger.info(f"[{user_id}] Saved pathway deleted successfully: {pathway_id}")
+            return JSONResponse(status_code=200, content=result)
+        else:
+            raise HTTPException(status_code=404, detail=result["error"])
+        
+    except Exception as e:
+        logger.exception(f"[{user_id}] Failed to delete saved pathway: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete saved pathway: {str(e)}"
         )
 
 
